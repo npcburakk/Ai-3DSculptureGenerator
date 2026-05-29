@@ -1,0 +1,36 @@
+# ── Web Framework ─────────────────────────────────────────────────────────────
+fastapi
+uvicorn[standard]
+python-multipart
+
+# ── Settings & Validation ─────────────────────────────────────────────────────
+pydantic
+pydantic-settings
+python-dotenv
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+numpy
+Pillow
+
+# ── Dev / Testing ─────────────────────────────────────────────────────────────
+httpx
+pytest
+pytest-asyncio
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Aşağıdakiler isteğe bağlıdır — ihtiyacına göre uncommment et
+# ─────────────────────────────────────────────────────────────────────────────
+
+# OpenAI SDK (prompt iyileştirme için)
+# openai
+
+# Shap-E — gerçek 3D üretim (GPU gerekli)
+# shap-e @ git+https://github.com/openai/shap-e.git
+
+# Point-E — alternatif 3D üretim (GPU gerekli)
+# point-e @ git+https://github.com/openai/point-e.git
+
+# PyTorch (CPU build — GPU için aşağıdaki CUDA komutunu kullan)
+# torch
+# torchvision
+# GPU kurulumu: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
