@@ -8,12 +8,14 @@ from typing import Optional
 
 from app.core.constants import JobStatus
 from app.models.job_model import JobModel
-from app.schemas.job_schema import JobCreateRequest, JobResponse, JobListResponse
+from app.schemas.job_schema import JobCreateRequest, JobResponse, JobListResponse, PostProcessingOptions
 from app.services.pipeline_service import PipelineService
+from app.services.file_service import FileService
 from app.database.db_store import store
 
 logger = logging.getLogger(__name__)
 pipeline = PipelineService()
+file_service = FileService()
 
 
 class JobService:
@@ -36,6 +38,56 @@ class JobService:
         logger.info(f"[{job.id}] Job created | prompt='{job.prompt}'")
         return JobResponse(**job.to_dict())
 
+    def create_image_job(
+        self, images: list[tuple[bytes, str]], style: str, output_format: str, user_id=None
+    ) -> JobResponse:
+        job_id = str(uuid.uuid4())
+        image_paths = file_service.save_uploaded_images(job_id, images)
+        job = JobModel(
+            id=job_id,
+            prompt=f"Fotoğraftan büst ({len(images)} fotoğraf)",
+            style=style,
+            backend="meshy",
+            output_format=output_format,
+            num_steps=64,
+            guidance_scale=15.0,
+            mesh_resolution=128,
+        )
+        job.metadata["job_type"] = "image_bust"
+        job.metadata["image_paths"] = [str(p) for p in image_paths]
+        job.metadata["post_processing"] = PostProcessingOptions().model_dump()
+        store.save(job, user_id=user_id)
+        logger.info(f"[{job.id}] Image job created | {len(images)} photo(s)")
+        return JobResponse(**job.to_dict())
+
+    def retry_job(self, job_id: str, user_id=None) -> JobResponse:
+        """Başarısız bir job'ın parametrelerini aynen kullanarak yeni bir job oluşturur."""
+        job = store.get(job_id)
+        new_job = JobModel(
+            id=str(uuid.uuid4()),
+            prompt=job.prompt,
+            enhanced_prompt=job.enhanced_prompt,
+            style=job.style,
+            backend=job.backend,
+            output_format=job.output_format,
+            num_steps=job.num_steps,
+            guidance_scale=job.guidance_scale,
+            mesh_resolution=job.mesh_resolution,
+        )
+        if job.metadata.get("job_type") == "image_bust":
+            new_paths = file_service.copy_uploaded_images(
+                job.metadata.get("image_paths", []), new_job.id
+            )
+            new_job.metadata["job_type"] = "image_bust"
+            new_job.metadata["image_paths"] = new_paths
+        new_job.metadata["post_processing"] = job.metadata.get(
+            "post_processing", PostProcessingOptions().model_dump()
+        )
+        new_job.metadata["retry_of"] = job_id
+        store.save(new_job, user_id=user_id)
+        logger.info(f"[{new_job.id}] Retry of [{job_id}] created")
+        return JobResponse(**new_job.to_dict())
+
     def get_job(self, job_id: str):
         job = store.get(job_id)
         return JobResponse(**job.to_dict()) if job else None
@@ -50,11 +102,22 @@ class JobService:
         return JobListResponse(total=total, page=page, page_size=page_size,
             jobs=[JobResponse(**j.to_dict()) for j in page_jobs])
 
+    def toggle_favorite(self, job_id: str):
+        job = store.get(job_id)
+        if not job:
+            return None
+        job.toggle_favorite()
+        store.save(job)
+        return JobResponse(**job.to_dict())
+
     def delete_job(self, job_id: str) -> bool:
         job = store.get(job_id)
         if not job: return False
         if job.status == JobStatus.RUNNING:
             job.mark_cancelled(); store.save(job)
+        if job.output_path:
+            file_service.delete_file(job.output_path)
+        file_service.delete_upload_dir(job_id)
         return store.delete(job_id)
 
     def get_stats(self, user_id=None) -> dict:

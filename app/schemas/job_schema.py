@@ -20,7 +20,7 @@ class PostProcessingOptions(BaseModel):
 
 class JobCreateRequest(BaseModel):
     prompt: str = Field(..., min_length=3, max_length=500)
-    backend: str = Field(default="shap_e")
+    backend: str = Field(default="meshy")
     output_format: str = Field(default="obj")
     num_steps: int = Field(default=64, ge=16, le=256)
     guidance_scale: float = Field(default=15.0, ge=1.0, le=30.0)
@@ -57,6 +57,7 @@ class JobResponse(BaseModel):
     output_path: Optional[str] = None
     output_url: Optional[str] = None
     error_message: Optional[str] = None
+    is_favorite: bool = False
     metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
     updated_at: datetime

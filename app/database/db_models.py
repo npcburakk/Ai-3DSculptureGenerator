@@ -31,6 +31,8 @@ class JobDB(Base):
 
     # Input
     prompt = Column(String, nullable=False)
+    enhanced_prompt = Column(String, nullable=True)
+    style = Column(String, default="realistic")
     backend = Column(String, nullable=False)
     output_format = Column(String, nullable=False)
     num_steps = Column(Integer, default=64)
@@ -41,6 +43,7 @@ class JobDB(Base):
     status = Column(String, default="pending", index=True)
     progress = Column(Integer, default=0)
     current_stage = Column(String, nullable=True)
+    is_favorite = Column(Boolean, default=False)
 
     # Output
     output_path = Column(String, nullable=True)

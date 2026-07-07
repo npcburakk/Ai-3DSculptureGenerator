@@ -56,6 +56,13 @@ class SupportedBackends:
     IDS = [b["id"] for b in ALL]
 
 
+class ImageUpload:
+    ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/jpg", "image/png"}
+    MIN_FILES = 1
+    MAX_FILES = 4
+    MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
 class PipelineStage:
     INITIALIZING = "initializing"
     ENCODING_TEXT = "encoding_text"

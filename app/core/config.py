@@ -32,9 +32,13 @@ class Settings(BaseSettings):
     # ── Paths ──────────────────────────────────
     BASE_DIR: Path = Path(__file__).resolve().parents[2]
     OUTPUT_DIR: str = "outputs"
+    UPLOAD_DIR: str = "uploads"
 
     # ── AI Backend ─────────────────────────────
-    DEFAULT_BACKEND: str = "shap_e"
+    DEFAULT_BACKEND: str = "meshy"
+    # Mock backend is hidden from the UI. When true it can still be exercised
+    # directly through the API (curl/Postman) for testing.
+    ENABLE_MOCK_BACKEND: bool = False
 
     # ── Meshy API ──────────────────────────────
     MESHY_API_KEY: str = ""

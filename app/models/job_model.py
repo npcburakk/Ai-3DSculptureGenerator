@@ -27,6 +27,7 @@ class JobModel:
     output_path: Optional[str] = None
     output_url: Optional[str] = None
     error_message: Optional[str] = None
+    is_favorite: bool = False
 
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
@@ -66,6 +67,10 @@ class JobModel:
         self.completed_at = datetime.utcnow()
         self.updated_at = self.completed_at
 
+    def toggle_favorite(self) -> None:
+        self.is_favorite = not self.is_favorite
+        self.updated_at = datetime.utcnow()
+
     @property
     def is_terminal(self) -> bool:
         return self.status in JobStatus.TERMINAL
@@ -92,6 +97,7 @@ class JobModel:
             "output_path": self.output_path,
             "output_url": self.output_url,
             "error_message": self.error_message,
+            "is_favorite": self.is_favorite,
             "metadata": self.metadata,
             "created_at": self.created_at,
             "updated_at": self.updated_at,

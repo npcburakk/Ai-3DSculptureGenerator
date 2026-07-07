@@ -27,6 +27,8 @@ def _db_to_model(job_db: JobDB) -> JobModel:
         num_steps=job_db.num_steps,
         guidance_scale=job_db.guidance_scale,
         mesh_resolution=job_db.mesh_resolution,
+        enhanced_prompt=job_db.enhanced_prompt,
+        style=job_db.style or "realistic",
     )
     job.status = job_db.status
     job.progress = job_db.progress
@@ -34,6 +36,7 @@ def _db_to_model(job_db: JobDB) -> JobModel:
     job.output_path = job_db.output_path
     job.output_url = job_db.output_url
     job.error_message = job_db.error_message
+    job.is_favorite = bool(job_db.is_favorite)
     job.metadata = job_db.job_metadata or {}
     job.created_at = job_db.created_at
     job.updated_at = job_db.updated_at
@@ -51,11 +54,14 @@ def _model_to_db_dict(job: JobModel) -> dict:
         "output_path": job.output_path,
         "output_url": job.output_url,
         "error_message": job.error_message,
+        "is_favorite": job.is_favorite,
         "job_metadata": job.metadata,
         "updated_at": job.updated_at,
         "completed_at": job.completed_at,
         "duration_seconds": job.duration_seconds,
         "output_format": job.output_format,
+        "style": job.style,
+        "enhanced_prompt": job.enhanced_prompt,
     }
 
 
@@ -81,6 +87,8 @@ class DatabaseStore:
                     id=job.id,
                     user_id=user_id,
                     prompt=job.prompt,
+                    enhanced_prompt=job.enhanced_prompt,
+                    style=job.style,
                     backend=job.backend,
                     output_format=job.output_format,
                     num_steps=job.num_steps,
@@ -92,6 +100,7 @@ class DatabaseStore:
                     output_path=job.output_path,
                     output_url=job.output_url,
                     error_message=job.error_message,
+                    is_favorite=job.is_favorite,
                     job_metadata=job.metadata,
                     created_at=job.created_at,
                     updated_at=job.updated_at,

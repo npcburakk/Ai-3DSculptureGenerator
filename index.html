@@ -57,6 +57,16 @@
     label { font-size: 13px; color: var(--text2); display: block; margin-bottom: 6px; }
     textarea { width: 100%; min-height: 90px; resize: vertical; font-size: 15px; padding: 10px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg2); color: var(--text); font-family: inherit; line-height: 1.5; }
     textarea:focus { outline: none; border-color: var(--text3); }
+    .mode-toggle { font-size: 12px; padding: 5px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg2); color: var(--text2); cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .mode-toggle:hover { border-color: var(--text3); color: var(--text); }
+    .dropzone { border: 1.5px dashed var(--border2); border-radius: var(--radius); padding: 24px; text-align: center; cursor: pointer; background: var(--bg2); transition: all .15s; }
+    .dropzone:hover, .dropzone.drag { border-color: var(--info-border); background: var(--info-bg); }
+    .dropzone-text { font-size: 13px; color: var(--text2); }
+    .dropzone-browse { color: var(--info-text); text-decoration: underline; }
+    .photo-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: .75rem; }
+    .photo-thumb { position: relative; width: 72px; height: 72px; border-radius: var(--radius); overflow: hidden; border: 0.5px solid var(--border2); }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .photo-thumb-remove { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff; font-size: 10px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
     /* Style seçimi */
     .style-group { margin-bottom: .75rem; }
     .style-group-title { font-size: 11px; color: var(--text3); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
@@ -64,21 +74,6 @@
     .style-btn { padding: 5px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg2); color: var(--text2); font-size: 12px; cursor: pointer; font-family: inherit; transition: all .15s; }
     .style-btn:hover { border-color: var(--text3); color: var(--text); }
     .style-btn.active { background: var(--info-bg); color: var(--info-text); border-color: var(--info-border); }
-    /* Model kartları */
-    .model-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: .5rem; }
-    .model-card { padding: 12px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg2); cursor: pointer; transition: all .15s; }
-    .model-card:hover { border-color: var(--text3); }
-    .model-card.active { background: var(--info-bg); border-color: var(--info-border); }
-    .model-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
-    .model-card.active .model-name { color: var(--info-text); }
-    .model-desc { font-size: 11px; color: var(--text3); line-height: 1.4; margin-bottom: 6px; }
-    .model-card.active .model-desc { color: var(--info-text); opacity: .8; }
-    .model-tag { display: inline-block; font-size: 10px; padding: 2px 5px; border-radius: 3px; background: var(--bg3); color: var(--text2); }
-    .model-card.active .model-tag { background: rgba(255,255,255,0.15); color: var(--info-text); }
-    .model-badge { font-size: 10px; padding: 1px 5px; border-radius: 3px; float: right; margin-bottom: 4px; }
-    .badge-local { background: #eaf3de; color: #3b6d11; }
-    .badge-cloud { background: #e6f1fb; color: #185fa5; }
-    .badge-test { background: #f0f0ec; color: #666660; }
     .fmt-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: .5rem; }
     .fmt-btn { flex: 1; min-width: 55px; padding: 7px 0; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg2); color: var(--text2); font-size: 12px; cursor: pointer; text-align: center; transition: all .15s; font-family: inherit; }
     .fmt-btn.active { background: var(--info-bg); color: var(--info-text); border-color: var(--info-border); }
@@ -86,6 +81,10 @@
     .advanced-toggle { font-size: 13px; color: var(--text3); cursor: pointer; margin-top: 1rem; display: inline-flex; align-items: center; gap: 4px; }
     .advanced-panel { display: none; margin-top: .75rem; padding-top: .75rem; border-top: 0.5px solid var(--border); }
     .advanced-panel.open { display: block; }
+    .section-toggle { font-size: 13px; color: var(--text2); cursor: pointer; margin-top: 1.25rem; display: inline-flex; align-items: center; gap: 4px; }
+    .section-toggle:hover { color: var(--text); }
+    .section-panel { display: none; margin-top: .75rem; }
+    .section-panel.open { display: block; }
     .slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: .75rem; }
     .slider-row label { min-width: 130px; margin: 0; }
     .slider-row input[type=range] { flex: 1; }
@@ -130,6 +129,12 @@
     .history-btn { padding: 5px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: transparent; color: var(--text); font-size: 11px; cursor: pointer; text-decoration: none; font-family: inherit; white-space: nowrap; }
     .history-btn:hover { background: var(--bg2); }
     .history-btn.view { color: var(--info-text); border-color: var(--info-border); }
+    .history-btn.retry-btn { color: var(--danger-text); border-color: var(--danger-border); }
+    .fav-btn { background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; flex-shrink: 0; padding: 2px; color: var(--text3); }
+    .fav-btn.active { color: #e0a500; }
+    .delete-btn { background: none; border: none; cursor: pointer; font-size: 15px; line-height: 1; flex-shrink: 0; padding: 2px; color: var(--text3); }
+    .delete-btn:hover { color: var(--danger-text); }
+    .history-header.clickable { cursor: pointer; }
     /* 3D Viewer */
     #viewerOverlay { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.88); flex-direction: column; align-items: center; justify-content: center; }
     #viewerContainer { width: 90vw; height: 78vh; max-width: 1000px; border-radius: 12px; overflow: hidden; position: relative; background: #111; }
@@ -178,11 +183,23 @@
 <div id="mainPage" style="display:none; padding:2rem 1rem;">
   <div class="main-wrap">
     <div class="card">
-      <label>Ne üretmek istiyorsun?</label>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <label style="margin-bottom:0">Ne üretmek istiyorsun?</label>
+        <button type="button" class="mode-toggle" id="photoModeToggle">📷 Fotoğraftan Oluştur</button>
+      </div>
       <textarea id="prompt" placeholder="örn: lion, wooden chair, spaceship..."></textarea>
 
-      <label style="margin-top:1.25rem">Stil <span style="color:var(--text3);font-weight:400">(opsiyonel)</span></label>
-      <div id="stylePanel">
+      <div id="photoUploadPanel" style="display:none">
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-text">Fotoğrafları buraya sürükleyin veya <span class="dropzone-browse">gözat</span> (1-4 foto)</div>
+          <input type="file" id="photoInput" accept="image/jpeg,image/png" multiple hidden>
+        </div>
+        <div class="hint">En iyi sonuç için düz arka planlı, baş ve omuzları gösteren net fotoğraflar kullanın. Birden fazla açı (ön + yan) daha isabetli sonuç verir.</div>
+        <div class="photo-thumbs" id="photoThumbs"></div>
+      </div>
+
+      <div class="section-toggle" id="styleToggle">▸ Stil Seçenekleri (opsiyonel)</div>
+      <div class="section-panel" id="stylePanel">
         <div class="style-group">
           <div class="style-group-title">Sculpture / Classic</div>
           <div class="style-row">
@@ -240,40 +257,20 @@
         </div>
       </div>
 
-      <label style="margin-top:1.25rem">AI Modeli</label>
-      <div class="model-grid">
-        <div class="model-card active" data-model="shap_e">
-          <span class="model-badge badge-local">Yerel</span>
-          <div class="model-name">Shap-E</div>
-          <div class="model-desc">OpenAI diffusion. GPU gerektirmez.</div>
-          <span class="model-tag">Mobilya · Araç</span>
+      <div class="section-toggle" id="fmtToggle">▸ Çıktı formatı <span style="color:var(--text3)">(varsayılan: OBJ)</span></div>
+      <div class="section-panel" id="fmtPanel">
+        <div class="fmt-row">
+          <button class="fmt-btn active" data-fmt="obj">OBJ</button>
+          <button class="fmt-btn" data-fmt="ply">PLY</button>
+          <button class="fmt-btn" data-fmt="glb">GLB</button>
+          <button class="fmt-btn" data-fmt="stl">STL</button>
+          <button class="fmt-btn" data-fmt="fbx">FBX</button>
         </div>
-        <div class="model-card" data-model="meshy">
-          <span class="model-badge badge-cloud">Bulut</span>
-          <div class="model-name">Meshy AI</div>
-          <div class="model-desc">Profesyonel kalite, detaylı.</div>
-          <span class="model-tag">Hayvan · İnsan</span>
-        </div>
-        <div class="model-card" data-model="mock">
-          <span class="model-badge badge-test">Test</span>
-          <div class="model-name">Mock</div>
-          <div class="model-desc">Anında küp mesh.</div>
-          <span class="model-tag">Hızlı · Offline</span>
-        </div>
+        <div class="hint" id="fmtHint">OBJ — Blender, Maya ve çoğu 3D yazılımla uyumlu</div>
       </div>
 
-      <label style="margin-top:1.25rem">Çıktı formatı</label>
-      <div class="fmt-row">
-        <button class="fmt-btn active" data-fmt="obj">OBJ</button>
-        <button class="fmt-btn" data-fmt="ply">PLY</button>
-        <button class="fmt-btn" data-fmt="glb">GLB</button>
-        <button class="fmt-btn" data-fmt="stl">STL</button>
-        <button class="fmt-btn" data-fmt="fbx">FBX</button>
-      </div>
-      <div class="hint" id="fmtHint">OBJ — Blender, Maya ve çoğu 3D yazılımla uyumlu</div>
-
-      <div class="advanced-toggle" id="advToggle">▸ Gelişmiş ayarlar</div>
-      <div class="advanced-panel" id="advPanel">
+      <div class="advanced-toggle" id="advToggle" style="display:none">▸ Gelişmiş ayarlar</div>
+      <div class="advanced-panel" id="advPanel" style="display:none">
         <div class="slider-row">
           <label>Diffusion adımı</label>
           <input type="range" id="steps" min="16" max="256" step="16" value="128" oninput="document.getElementById('stepsVal').textContent=this.value">
@@ -341,11 +338,13 @@
     <div class="error-box" id="errorBox"></div>
 
     <div class="card">
-      <div class="history-header">
-        <h2>Geçmiş</h2>
+      <div class="history-header clickable" id="historyToggle">
+        <h2><span id="historyArrow">▸</span> Geçmiş <span id="historyCount" style="color:var(--text3);font-weight:400"></span></h2>
         <button class="nav-btn" id="refreshHistory" style="font-size:12px;padding:4px 10px">Yenile</button>
       </div>
-      <div id="historyList"><div class="history-empty">Henüz üretim yok.</div></div>
+      <div id="historyPanel" class="section-panel">
+        <div id="historyList"><div class="history-empty">Henüz üretim yok.</div></div>
+      </div>
     </div>
   </div>
 </div>
@@ -370,11 +369,13 @@ const API = 'http://localhost:8000/api/v1';
 let token = localStorage.getItem('token') || null;
 let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 let selectedFmt = 'obj';
-let selectedModel = 'shap_e';
+let selectedModel = 'meshy';
 let selectedStyle = 'realistic';
 let polling = null;
 let currentJobId = null;
 let currentJobFmt = null;
+let photoMode = false;
+let selectedFiles = [];
 
 const STAGES = ['initializing','encoding_text','generating_latents','decoding_mesh','exporting_file','done'];
 const STAGE_LABELS = { initializing:'Başlatılıyor...', encoding_text:'Metin kodlanıyor...', generating_latents:'AI modeli çalışıyor...', decoding_mesh:'Mesh çözümleniyor...', exporting_file:'Dosya hazırlanıyor...', done:'Tamamlandı!' };
@@ -461,17 +462,6 @@ document.querySelectorAll('.style-btn').forEach(btn => {
   });
 });
 
-// Model seçimi
-document.querySelectorAll('.model-card').forEach(card => {
-  card.addEventListener('click', () => {
-    document.querySelectorAll('.model-card').forEach(c => c.classList.remove('active'));
-    card.classList.add('active'); selectedModel = card.dataset.model;
-    updateFormatButtons();
-    document.getElementById('advPanel').style.display = selectedModel === 'shap_e' ? '' : 'none';
-    document.getElementById('advToggle').style.display = selectedModel === 'shap_e' ? '' : 'none';
-  });
-});
-
 // Format seçimi
 document.querySelectorAll('.fmt-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -502,9 +492,79 @@ document.getElementById('advToggle').addEventListener('click', () => {
   document.getElementById('advToggle').textContent = panel.classList.contains('open') ? '▾ Gelişmiş ayarlar' : '▸ Gelişmiş ayarlar';
 });
 
+document.getElementById('styleToggle').addEventListener('click', () => {
+  const panel = document.getElementById('stylePanel');
+  panel.classList.toggle('open');
+  document.getElementById('styleToggle').textContent = panel.classList.contains('open') ? '▾ Stil Seçenekleri (opsiyonel)' : '▸ Stil Seçenekleri (opsiyonel)';
+});
+
+document.getElementById('fmtToggle').addEventListener('click', () => {
+  const panel = document.getElementById('fmtPanel');
+  panel.classList.toggle('open');
+  document.getElementById('fmtToggle').innerHTML = panel.classList.contains('open')
+    ? '▾ Çıktı formatı <span style="color:var(--text3)">(varsayılan: OBJ)</span>'
+    : '▸ Çıktı formatı <span style="color:var(--text3)">(varsayılan: OBJ)</span>';
+});
+
+updateFormatButtons();
+
+// Fotoğraftan oluştur modu
+const photoModeToggle = document.getElementById('photoModeToggle');
+const promptTextarea = document.getElementById('prompt');
+const photoUploadPanel = document.getElementById('photoUploadPanel');
+const dropzone = document.getElementById('dropzone');
+const photoInput = document.getElementById('photoInput');
+const photoThumbs = document.getElementById('photoThumbs');
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+
+photoModeToggle.addEventListener('click', () => {
+  photoMode = !photoMode;
+  promptTextarea.style.display = photoMode ? 'none' : '';
+  photoUploadPanel.style.display = photoMode ? '' : 'none';
+  photoModeToggle.textContent = photoMode ? '✎ Prompt ile Oluştur' : '📷 Fotoğraftan Oluştur';
+});
+
+dropzone.addEventListener('click', () => photoInput.click());
+dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  addPhotoFiles(Array.from(e.dataTransfer.files));
+});
+photoInput.addEventListener('change', () => {
+  addPhotoFiles(Array.from(photoInput.files));
+  photoInput.value = '';
+});
+
+function addPhotoFiles(files) {
+  const valid = files.filter(f => ALLOWED_IMAGE_TYPES.includes(f.type));
+  for (const f of valid) {
+    if (selectedFiles.length >= 4) break;
+    selectedFiles.push(f);
+  }
+  renderPhotoThumbs();
+}
+
+function renderPhotoThumbs() {
+  photoThumbs.innerHTML = selectedFiles.map((f, i) => `
+    <div class="photo-thumb">
+      <img src="${URL.createObjectURL(f)}">
+      <button type="button" class="photo-thumb-remove" data-idx="${i}">✕</button>
+    </div>
+  `).join('');
+  photoThumbs.querySelectorAll('.photo-thumb-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedFiles.splice(parseInt(btn.dataset.idx), 1);
+      renderPhotoThumbs();
+    });
+  });
+}
+
 document.getElementById('genBtn').addEventListener('click', startGeneration);
 
 async function startGeneration() {
+  if (photoMode) return startImageGeneration();
   const prompt = document.getElementById('prompt').value.trim();
   if (!prompt) { showError('Lütfen bir prompt gir.'); return; }
   const numSteps = parseInt(document.getElementById('steps').value);
@@ -532,6 +592,24 @@ async function startGeneration() {
     if (!res.ok) throw new Error();
     const job = await res.json();
     pollStatus(job.id, prompt);
+  } catch(e) { showError('Sunucuya bağlanılamadı.'); setGenerating(false); hideProgress(); }
+}
+
+async function startImageGeneration() {
+  if (selectedFiles.length < 1) { showError('Lütfen en az 1 fotoğraf yükleyin.'); return; }
+  if (selectedFiles.length > 4) { showError('En fazla 4 fotoğraf yükleyebilirsiniz.'); return; }
+  hideError(); hideResult(); setGenerating(true); showProgress();
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const formData = new FormData();
+  selectedFiles.forEach(f => formData.append('files', f));
+  formData.append('style', selectedStyle);
+  formData.append('output_format', selectedFmt);
+  try {
+    const res = await fetch(`${API}/jobs/image`, { method: 'POST', headers, body: formData });
+    if (!res.ok) throw new Error();
+    const job = await res.json();
+    pollStatus(job.id, 'foto-bust');
   } catch(e) { showError('Sunucuya bağlanılamadı.'); setGenerating(false); hideProgress(); }
 }
 
@@ -570,7 +648,7 @@ function showResult(jobId, prompt, data) {
   document.getElementById('resultCard').classList.add('show');
   document.getElementById('dlBtn').href = `${API}/jobs/${jobId}/download`;
   document.getElementById('dlBtn').setAttribute('download', `${prompt.slice(0,30).replace(/\s+/g,'-')}.${actualFmt}`);
-  document.getElementById('resultMeta').textContent = `Model: ${selectedModel} · Stil: ${selectedStyle} · Format: ${actualFmt.toUpperCase()}`;
+  document.getElementById('resultMeta').textContent = `Stil: ${selectedStyle} · Format: ${actualFmt.toUpperCase()}`;
   hideProgress();
 }
 
@@ -590,28 +668,93 @@ async function loadHistory() {
 
 function renderHistory(jobs) {
   const list = document.getElementById('historyList');
+  document.getElementById('historyCount').textContent = jobs.length ? `(${jobs.length})` : '';
   if (!jobs.length) { list.innerHTML = '<div class="history-empty">Henüz üretim yok.</div>'; return; }
-  const icons = { shap_e:'🔷', meshy:'✨', mock:'🧊' };
   list.innerHTML = jobs.map(job => `
     <div class="history-item">
-      <div class="history-icon">${icons[job.backend] || '🎲'}</div>
+      <div class="history-icon">${job.metadata?.job_type === 'image_bust' ? '📷' : '✨'}</div>
       <div class="history-info">
         <div class="history-prompt">${job.prompt}</div>
-        <div class="history-meta">${job.backend} · ${job.style || 'realistic'} · ${job.output_format?.toUpperCase()} · ${formatDate(job.created_at)}</div>
+        <div class="history-meta">${job.style || 'realistic'} · ${job.output_format?.toUpperCase()} · ${formatDate(job.created_at)}</div>
       </div>
       <span class="history-status status-${job.status}">${statusLabel(job.status)}</span>
+      <button class="fav-btn ${job.is_favorite ? 'active' : ''}" data-job-id="${job.id}" title="Favori">${job.is_favorite ? '★' : '☆'}</button>
       ${job.status === 'completed' ? `
         <div class="history-actions">
           <button class="history-btn view" onclick="openViewer('${API}/jobs/${job.id}/download', '${job.output_format}', '${job.prompt.slice(0,30)}')">👁</button>
           <a class="history-btn" href="${API}/jobs/${job.id}/download" download>İndir</a>
         </div>` : ''}
+      ${job.status === 'failed' ? `
+        <div class="history-actions">
+          <button class="history-btn retry-btn" data-job-id="${job.id}">Tekrar Dene</button>
+        </div>` : ''}
+      <button class="delete-btn" data-job-id="${job.id}" title="Sil">🗑</button>
     </div>
   `).join('');
+  list.querySelectorAll('.fav-btn').forEach(btn => {
+    btn.addEventListener('click', () => toggleFavorite(btn.dataset.jobId, btn));
+  });
+  list.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => deleteJobItem(btn.dataset.jobId, btn.closest('.history-item')));
+  });
+  list.querySelectorAll('.retry-btn').forEach(btn => {
+    btn.addEventListener('click', () => retryJob(btn.dataset.jobId));
+  });
+}
+
+async function retryJob(jobId) {
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  hideError(); hideResult(); setGenerating(true); showProgress();
+  try {
+    const res = await fetch(`${API}/jobs/${jobId}/retry`, { method: 'POST', headers });
+    if (!res.ok) throw new Error();
+    const job = await res.json();
+    pollStatus(job.id, job.prompt);
+  } catch(e) {
+    showError('Tekrar deneme başarısız oldu.');
+    setGenerating(false); hideProgress();
+  }
+}
+
+async function deleteJobItem(jobId, itemEl) {
+  if (!confirm('Bu işlemi silmek istediğinize emin misiniz?')) return;
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  try {
+    const res = await fetch(`${API}/jobs/${jobId}`, { method: 'DELETE', headers });
+    if (!res.ok && res.status !== 404) throw new Error();
+    itemEl.remove();
+    const remaining = document.querySelectorAll('#historyList .history-item').length;
+    document.getElementById('historyCount').textContent = remaining ? `(${remaining})` : '';
+    if (!remaining) {
+      document.getElementById('historyList').innerHTML = '<div class="history-empty">Henüz üretim yok.</div>';
+    }
+  } catch(e) { showError('Silme işlemi başarısız oldu.'); }
+}
+
+async function toggleFavorite(jobId, btn) {
+  btn.disabled = true;
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  try {
+    const res = await fetch(`${API}/jobs/${jobId}/favorite`, { method: 'PATCH', headers });
+    if (!res.ok) throw new Error();
+    const job = await res.json();
+    btn.classList.toggle('active', job.is_favorite);
+    btn.textContent = job.is_favorite ? '★' : '☆';
+  } catch(e) {} finally { btn.disabled = false; }
 }
 
 function statusLabel(s) { return {pending:'Bekliyor', running:'Çalışıyor', completed:'Tamamlandı', failed:'Başarısız', cancelled:'İptal'}[s] || s; }
 function formatDate(d) { if (!d) return ''; const dt = new Date(d); return dt.toLocaleDateString('tr-TR') + ' ' + dt.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'}); }
-document.getElementById('refreshHistory').addEventListener('click', loadHistory);
+document.getElementById('refreshHistory').addEventListener('click', (e) => { e.stopPropagation(); loadHistory(); });
+
+document.getElementById('historyToggle').addEventListener('click', () => {
+  const panel = document.getElementById('historyPanel');
+  panel.classList.toggle('open');
+  document.getElementById('historyArrow').textContent = panel.classList.contains('open') ? '▾' : '▸';
+});
 
 function showError(msg) { const b = document.getElementById('errorBox'); b.textContent = msg; b.classList.add('show'); }
 function hideError() { document.getElementById('errorBox').classList.remove('show'); }

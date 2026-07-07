@@ -3,7 +3,9 @@ Pipeline Service — Shap-E, Meshy API, Mock + Post-processing
 """
 
 import asyncio
+import base64
 import logging
+import mimetypes
 from pathlib import Path
 from typing import Callable
 
@@ -17,6 +19,7 @@ from app.services.mesh_service import MeshService
 logger = logging.getLogger(__name__)
 ProgressCallback = Callable[[int, str], None]
 MESHY_API_BASE = "https://api.meshy.ai/openapi/v2"
+MESHY_IMAGE_API_BASE = "https://api.meshy.ai/openapi/v1"
 mesh_service = MeshService()
 
 
@@ -26,7 +29,9 @@ class PipelineService:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     async def run(self, job: JobModel, on_progress: ProgressCallback) -> str:
-        if job.backend == "shap_e":
+        if job.metadata.get("job_type") == "image_bust":
+            output_path = await self._run_meshy_image(job, on_progress)
+        elif job.backend == "shap_e":
             output_path = await self._run_shap_e(job, on_progress)
         elif job.backend == "meshy":
             output_path = await self._run_meshy(job, on_progress)
@@ -150,6 +155,54 @@ class PipelineService:
             else:
                 cb(int(20 + progress * 0.65), PipelineStage.GENERATING_LATENTS)
         raise RuntimeError("Meshy job timed out")
+
+    async def _run_meshy_image(self, job: JobModel, cb: ProgressCallback) -> str:
+        api_key = settings.MESHY_API_KEY
+        if not api_key:
+            raise RuntimeError("MESHY_API_KEY is not set in .env")
+
+        image_paths = job.metadata.get("image_paths", [])
+        if not image_paths:
+            raise RuntimeError("No uploaded images found for this job")
+
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        cb(5, PipelineStage.INITIALIZING)
+        data_uris = [self._image_to_data_uri(Path(p)) for p in image_paths]
+
+        cb(15, PipelineStage.ENCODING_TEXT)
+        single = len(data_uris) == 1
+        create_endpoint = f"{MESHY_IMAGE_API_BASE}/{'image-to-3d' if single else 'multi-image-to-3d'}"
+        payload = {"image_url": data_uris[0]} if single else {"image_urls": data_uris}
+
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.post(create_endpoint, headers=headers, json=payload)
+            resp.raise_for_status()
+            meshy_id = resp.json()["result"]
+            job.metadata["meshy_id"] = meshy_id
+
+        cb(25, PipelineStage.GENERATING_LATENTS)
+        status_endpoint = f"{create_endpoint}/{meshy_id}"
+        for _ in range(120):
+            await asyncio.sleep(5)
+            async with httpx.AsyncClient(timeout=30) as client:
+                resp = await client.get(status_endpoint, headers=headers)
+                resp.raise_for_status()
+                data = resp.json()
+            status = data.get("status")
+            progress = data.get("progress", 0)
+            if status == "SUCCEEDED":
+                cb(90, PipelineStage.EXPORTING_FILE)
+                return await self._download_meshy_file(data, job, headers)
+            elif status == "FAILED":
+                raise RuntimeError(f"Meshy failed: {data.get('task_error')}")
+            else:
+                cb(int(25 + progress * 0.6), PipelineStage.GENERATING_LATENTS)
+        raise RuntimeError("Meshy image job timed out")
+
+    def _image_to_data_uri(self, path: Path) -> str:
+        mime = mimetypes.guess_type(str(path))[0] or "image/jpeg"
+        b64 = base64.b64encode(path.read_bytes()).decode("ascii")
+        return f"data:{mime};base64,{b64}"
 
     async def _download_meshy_file(self, data: dict, job: JobModel, headers: dict) -> str:
         fmt = job.output_format
