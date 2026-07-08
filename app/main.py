@@ -2,14 +2,20 @@
 Text-to-3D Generator — Main Application Entry Point
 """
 
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
 from app.core.config import settings
 from app.database.db_store import store
+from app.utils.error_messages import GENERIC_ERROR, INVALID_INPUT_ERROR
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -37,6 +43,18 @@ app.add_middleware(
 
 app.mount("/outputs", StaticFiles(directory=settings.OUTPUT_DIR), name="outputs")
 app.include_router(router, prefix="/api/v1")
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError):
+    logger.warning(f"Validation error on {request.url.path}: {exc}")
+    return JSONResponse(status_code=422, content={"detail": INVALID_INPUT_ERROR})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request, exc: Exception):
+    logger.error(f"Unhandled error on {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(status_code=500, content={"detail": GENERIC_ERROR})
 
 
 @app.get("/", tags=["Health"])

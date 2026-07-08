@@ -2,8 +2,11 @@
 API Routes — Text-to-3D Generator
 """
 
+import io
+import zipfile
+
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Depends, File, Form, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from typing import Optional
 
 from app.schemas.job_schema import (
@@ -14,6 +17,7 @@ from app.schemas.user_schema import UserRegisterRequest, UserLoginRequest, UserR
 from app.services.job_service import JobService
 from app.services.status_service import StatusService
 from app.services.prompt_service import PromptService
+from app.services.file_service import FileService
 from app.auth.user_service import UserService as UserSvc
 from app.auth.auth_bearer import get_current_user, require_current_user
 from app.core.constants import SupportedBackends, OutputFormat, ImageUpload, JobStatus
@@ -24,6 +28,7 @@ router = APIRouter()
 job_service = JobService()
 status_service = StatusService()
 prompt_service = PromptService()
+file_service = FileService()
 user_service = UserSvc()
 
 
@@ -162,6 +167,29 @@ async def download_output(job_id: str):
         path=job.output_path,
         media_type="application/octet-stream",
         filename=f"{job_id}.{job.output_format}",
+    )
+
+@router.get("/jobs/{job_id}/download-all", tags=["Jobs"])
+async def download_all_outputs(job_id: str):
+    job = job_service.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
+    if job.status != "completed":
+        raise HTTPException(status_code=409, detail="Job is not completed yet")
+    files = file_service.find_output_files(job_id)
+    if not files:
+        raise HTTPException(status_code=404, detail="Output file not found")
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for path in files:
+            zf.write(path, arcname=path.name)
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{job_id}.zip"'},
     )
 
 @router.get("/models", tags=["Meta"])

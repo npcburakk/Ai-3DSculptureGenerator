@@ -12,6 +12,7 @@ from app.schemas.job_schema import JobCreateRequest, JobResponse, JobListRespons
 from app.services.pipeline_service import PipelineService
 from app.services.file_service import FileService
 from app.database.db_store import store
+from app.utils.error_messages import to_user_message
 
 logger = logging.getLogger(__name__)
 pipeline = PipelineService()
@@ -149,7 +150,8 @@ class JobService:
                 job.mark_completed(output_path, output_url); store.save(job)
                 logger.info(f"[{job_id}] Completed in {job.duration_seconds:.1f}s")
         except Exception as exc:
+            # Teknik detay sadece logda tutulur; kullanıcıya sade bir mesaj gösterilir.
             logger.error(f"[{job_id}] Failed: {exc}", exc_info=True)
             job = store.get(job_id)
             if job and not job.is_terminal:
-                job.mark_failed(str(exc)); store.save(job)
+                job.mark_failed(to_user_message(exc)); store.save(job)

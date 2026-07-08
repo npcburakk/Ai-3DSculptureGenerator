@@ -7,6 +7,7 @@ import mimetypes
 import shutil
 from pathlib import Path
 from app.core.config import settings
+from app.core.constants import OutputFormat
 
 
 class FileService:
@@ -18,6 +19,13 @@ class FileService:
 
     def get_output_path(self, job_id: str, fmt: str) -> Path:
         return self.output_dir / f"{job_id}.{fmt}"
+
+    def find_output_files(self, job_id: str) -> list[Path]:
+        """Job'a ait üretilmiş olan tüm format dosyalarını (varsa) döner."""
+        return [
+            path for fmt in OutputFormat.ALL
+            if (path := self.output_dir / f"{job_id}.{fmt}").exists()
+        ]
 
     def file_exists(self, path: str) -> bool:
         return Path(path).exists()

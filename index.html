@@ -333,6 +333,7 @@
       <div class="result-actions">
         <button class="view-btn" id="viewBtn">👁 Görüntüle</button>
         <a class="dl-btn" id="dlBtn" href="#">İndir</a>
+        <a class="dl-btn" id="dlAllBtn" href="#">Tümünü İndir (ZIP)</a>
       </div>
     </div>
     <div class="error-box" id="errorBox"></div>
@@ -648,6 +649,8 @@ function showResult(jobId, prompt, data) {
   document.getElementById('resultCard').classList.add('show');
   document.getElementById('dlBtn').href = `${API}/jobs/${jobId}/download`;
   document.getElementById('dlBtn').setAttribute('download', `${prompt.slice(0,30).replace(/\s+/g,'-')}.${actualFmt}`);
+  document.getElementById('dlAllBtn').href = `${API}/jobs/${jobId}/download-all`;
+  document.getElementById('dlAllBtn').setAttribute('download', `${prompt.slice(0,30).replace(/\s+/g,'-')}.zip`);
   document.getElementById('resultMeta').textContent = `Stil: ${selectedStyle} · Format: ${actualFmt.toUpperCase()}`;
   hideProgress();
 }
@@ -683,6 +686,7 @@ function renderHistory(jobs) {
         <div class="history-actions">
           <button class="history-btn view" onclick="openViewer('${API}/jobs/${job.id}/download', '${job.output_format}', '${job.prompt.slice(0,30)}')">👁</button>
           <a class="history-btn" href="${API}/jobs/${job.id}/download" download>İndir</a>
+          <a class="history-btn" href="${API}/jobs/${job.id}/download-all" download title="Tümünü İndir (ZIP)">ZIP</a>
         </div>` : ''}
       ${job.status === 'failed' ? `
         <div class="history-actions">
@@ -853,7 +857,7 @@ async function openViewer(url, fmt, name) {
     if (animId) cancelAnimationFrame(animId);
     (function loop() { animId = requestAnimationFrame(loop); renderer.render(scene, camera); })();
   } catch(e) {
-    document.getElementById('viewerLoading').textContent = 'Yüklenemedi: ' + e.message;
+    document.getElementById('viewerLoading').textContent = 'Model yüklenemedi, lütfen tekrar deneyin.';
   }
 }
 
