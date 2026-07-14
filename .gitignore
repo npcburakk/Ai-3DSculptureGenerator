@@ -1,2 +1,7 @@
 .env
 logs/
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+text3d.db
