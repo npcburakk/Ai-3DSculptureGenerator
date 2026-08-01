@@ -41,7 +41,8 @@
     .sidebar-logo-icon { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; }
     .sidebar-logo b { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; }
     .sidebar-nav { display: flex; flex-direction: column; gap: 2px; }
-    .sidebar-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius); font-size: 14px; color: var(--text2); user-select: none; }
+    .sidebar-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius); font-size: 14px; color: var(--text2); user-select: none; cursor: pointer; }
+    .sidebar-nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
     .sidebar-nav-item .si-icon { width: 18px; text-align: center; font-size: 15px; }
     .sidebar-nav-item.active { background: linear-gradient(90deg, rgba(124,58,237,0.18), rgba(168,85,247,0.06)); color: #d8c8ff; font-weight: 500; }
     .sidebar-promo { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow-card); }
@@ -49,7 +50,8 @@
     .sidebar-promo-top img { width: 24px; height: 24px; border-radius: 6px; object-fit: cover; }
     .sidebar-promo-title { font-weight: 600; font-size: 14px; }
     .sidebar-promo-text { font-size: 12px; color: var(--text3); line-height: 1.5; margin-bottom: 14px; }
-    .sidebar-promo-btn { display: block; text-align: center; padding: 9px; border-radius: var(--radius); background: var(--accent-grad); color: #fff; font-size: 13px; font-weight: 500; }
+    .sidebar-promo-btn { display: block; text-align: center; padding: 9px; border-radius: var(--radius); background: var(--accent-grad); color: #fff; font-size: 13px; font-weight: 500; cursor: pointer; }
+    .sidebar-promo-btn:hover { opacity: .9; }
 
     /* Top nav */
     .app-main { flex: 1; min-width: 0; }
@@ -224,11 +226,11 @@
     <div>
       <div class="sidebar-logo"><img src="/static/images/logo-mark.png" alt="" class="sidebar-logo-icon" onerror="this.remove()">Text to <b>3D</b></div>
       <nav class="sidebar-nav">
-        <div class="sidebar-nav-item active"><span class="si-icon">⌂</span>Ana Sayfa</div>
-        <div class="sidebar-nav-item"><span class="si-icon">✦</span>Üret</div>
-        <div class="sidebar-nav-item"><span class="si-icon">◷</span>Geçmiş</div>
-        <div class="sidebar-nav-item"><span class="si-icon">▦</span>Galeri</div>
-        <div class="sidebar-nav-item"><span class="si-icon">⚙</span>Ayarlar</div>
+        <div class="sidebar-nav-item active" id="navHome"><span class="si-icon">⌂</span>Ana Sayfa</div>
+        <div class="sidebar-nav-item" id="navGenerate"><span class="si-icon">✦</span>Üret</div>
+        <div class="sidebar-nav-item" id="navHistory"><span class="si-icon">◷</span>Geçmiş</div>
+        <div class="sidebar-nav-item" id="navGallery"><span class="si-icon">▦</span>Galeri</div>
+        <div class="sidebar-nav-item" id="navSettings"><span class="si-icon">⚙</span>Ayarlar</div>
       </nav>
     </div>
     <div class="sidebar-promo">
@@ -237,7 +239,7 @@
         <span class="sidebar-promo-title">Text to 3D</span>
       </div>
       <div class="sidebar-promo-text">Yapay zeka ile metin veya fotoğraftan 3D model oluşturun.</div>
-      <div class="sidebar-promo-btn">+ Yeni Üretim</div>
+      <div class="sidebar-promo-btn" id="sidebarNewBtn">+ Yeni Üretim</div>
     </div>
   </aside>
 
@@ -257,7 +259,7 @@
 <div id="mainPage" style="display:none; padding:2rem 1rem;">
   <div class="main-wrap">
     <div class="top-grid">
-    <div class="card">
+    <div class="card" id="generatorCard">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <label style="margin-bottom:0">Ne üretmek istiyorsun?</label>
         <button type="button" class="mode-toggle" id="photoModeToggle">📷 Fotoğraftan Oluştur</button>
@@ -902,6 +904,32 @@ document.getElementById('historyToggle').addEventListener('click', () => {
   panel.classList.toggle('open');
   document.getElementById('historyArrow').textContent = panel.classList.contains('open') ? '▾' : '▸';
 });
+
+// Sidebar navigation
+function focusGenerator() {
+  document.getElementById('generatorCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const promptEl = document.getElementById('prompt');
+  if (promptEl && getComputedStyle(promptEl).display !== 'none') promptEl.focus();
+}
+document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.sidebar-nav-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+  });
+});
+document.getElementById('navHome').addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+document.getElementById('navGenerate').addEventListener('click', focusGenerator);
+document.getElementById('navHistory').addEventListener('click', () => {
+  const panel = document.getElementById('historyPanel');
+  if (!panel.classList.contains('open')) {
+    panel.classList.add('open');
+    document.getElementById('historyArrow').textContent = '▾';
+  }
+  document.getElementById('historyToggle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+document.getElementById('sidebarNewBtn').addEventListener('click', focusGenerator);
 
 function showError(msg) { const b = document.getElementById('errorBox'); b.textContent = msg; b.classList.add('show'); }
 function hideError() { document.getElementById('errorBox').classList.remove('show'); }
