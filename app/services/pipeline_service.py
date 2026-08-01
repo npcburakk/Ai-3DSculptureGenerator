@@ -205,6 +205,10 @@ class PipelineService:
         return f"data:{mime};base64,{b64}"
 
     async def _download_meshy_file(self, data: dict, job: JobModel, headers: dict) -> str:
+        thumbnail_url = data.get("thumbnail_url")
+        if thumbnail_url:
+            job.metadata["thumbnail_url"] = thumbnail_url
+
         fmt = job.output_format
         model_urls = data.get("model_urls", {})
         url = model_urls.get(fmt)

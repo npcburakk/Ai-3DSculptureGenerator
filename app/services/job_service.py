@@ -145,8 +145,14 @@ class JobService:
             from app.core.config import settings
             rel_path = output_path.split(settings.OUTPUT_DIR)[-1].lstrip("/\\")
             output_url = f"/outputs/{rel_path}"
+            pipeline_metadata = job.metadata
             job = store.get(job_id)
             if job and not job.is_terminal:
+                # pipeline.run() may have written extra fields onto its own
+                # `job` reference (e.g. thumbnail_url) — store.get() above
+                # re-fetches a separate instance from the DB, so merge those
+                # back in or they'd be silently dropped before saving.
+                job.metadata.update(pipeline_metadata)
                 job.mark_completed(output_path, output_url); store.save(job)
                 logger.info(f"[{job_id}] Completed in {job.duration_seconds:.1f}s")
         except Exception as exc:
