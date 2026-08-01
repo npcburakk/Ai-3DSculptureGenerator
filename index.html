@@ -365,6 +365,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 const API = 'http://localhost:8000/api/v1';
 let token = localStorage.getItem('token') || null;
@@ -839,6 +840,25 @@ function updateCamera() {
   camera.lookAt(new THREE.Vector3(target.x, target.y, target.z));
 }
 
+const modelCache = new Map(); // url -> Promise<ArrayBuffer|string>
+const modelInFlight = new Map(); // url -> Promise (dedupe concurrent opens of same url)
+
+function fetchModelData(url, fmt) {
+  if (modelCache.has(url)) return modelCache.get(url);
+  if (modelInFlight.has(url)) return modelInFlight.get(url);
+  const ext = fmt.toLowerCase();
+  const isText = ext === 'obj';
+  const p = fetch(url)
+    .then(resp => {
+      if (!resp.ok) throw new Error(`Dosya indirilemedi (HTTP ${resp.status})`);
+      return isText ? resp.text() : resp.arrayBuffer();
+    })
+    .then(data => { modelCache.set(url, Promise.resolve(data)); modelInFlight.delete(url); return data; })
+    .catch(err => { modelInFlight.delete(url); throw err; });
+  modelInFlight.set(url, p);
+  return p;
+}
+
 async function openViewer(url, fmt, name) {
   const overlay = document.getElementById('viewerOverlay');
   overlay.style.display = 'flex';
@@ -848,27 +868,28 @@ async function openViewer(url, fmt, name) {
   if (!renderer) initViewer();
   if (currentMesh) { scene.remove(currentMesh); currentMesh = null; }
   try {
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('Dosya indirilemedi');
-    const mesh = await parseModel(resp, fmt);
+    const data = await fetchModelData(url, fmt);
+    const mesh = await parseModel(data, fmt);
     scene.add(mesh); currentMesh = mesh;
-    fitModel(mesh);
+    fitModel(mesh, fmt);
     document.getElementById('viewerLoading').style.display = 'none';
     if (animId) cancelAnimationFrame(animId);
     (function loop() { animId = requestAnimationFrame(loop); renderer.render(scene, camera); })();
   } catch(e) {
-    document.getElementById('viewerLoading').textContent = 'Model yüklenemedi, lütfen tekrar deneyin.';
+    console.error('[viewer] Model yüklenemedi:', e);
+    modelCache.delete(url);
+    document.getElementById('viewerLoading').textContent = 'Model yüklenemedi: ' + (e && e.message ? e.message : 'bilinmeyen hata');
   }
 }
 
-async function parseModel(resp, fmt) {
+async function parseModel(data, fmt) {
   const THREE = window.THREE;
   const ext = fmt.toLowerCase();
-  if (ext === 'stl') { const buf = await resp.arrayBuffer(); const geo = parseSTL(buf); const mat = new THREE.MeshStandardMaterial({color:0xcccccc,roughness:0.6,metalness:0.1}); return new THREE.Mesh(geo, mat); }
-  else if (ext === 'obj') { const text = await resp.text(); const geo = parseOBJ(text); const mat = new THREE.MeshStandardMaterial({color:0xcccccc,roughness:0.6,metalness:0.1}); return new THREE.Mesh(geo, mat); }
-  else if (ext === 'ply') { const buf = await resp.arrayBuffer(); const geo = parsePLY(buf); const mat = new THREE.MeshStandardMaterial({color:0xcccccc,roughness:0.6,metalness:0.1}); return new THREE.Mesh(geo, mat); }
-  else if (ext === 'glb' || ext === 'gltf') { const buf = await resp.arrayBuffer(); return parseGLB(buf); }
-  else { const geo = new THREE.BoxGeometry(1,1,1); const mat = new THREE.MeshStandardMaterial({color:0x88aaff}); return new THREE.Mesh(geo, mat); }
+  if (ext === 'stl') { const geo = parseSTL(data); const mat = new THREE.MeshStandardMaterial({color:0xcccccc,roughness:0.6,metalness:0.1}); return new THREE.Mesh(geo, mat); }
+  else if (ext === 'obj') { const geo = parseOBJ(data); const mat = new THREE.MeshStandardMaterial({color:0xcccccc,roughness:0.6,metalness:0.1}); return new THREE.Mesh(geo, mat); }
+  else if (ext === 'ply') { const geo = parsePLY(data); const mat = new THREE.MeshStandardMaterial({color:0xcccccc,roughness:0.6,metalness:0.1}); return new THREE.Mesh(geo, mat); }
+  else if (ext === 'glb' || ext === 'gltf') { return await parseGLB(data); }
+  else { throw new Error(`Desteklenmeyen format: ${fmt}`); }
 }
 
 function parseSTL(buf) {
@@ -917,20 +938,38 @@ function parsePLY(buf) {
 
 function parseGLB(buf) {
   const THREE = window.THREE;
-  const geo = new THREE.SphereGeometry(0.8, 32, 32);
-  const mat = new THREE.MeshStandardMaterial({color:0x4488ff, roughness:0.3, metalness:0.5});
-  return new THREE.Mesh(geo, mat);
+  if (!THREE.GLTFLoader) {
+    return Promise.reject(new Error('GLTFLoader yüklenemedi (CDN erişilemiyor olabilir)'));
+  }
+  return new Promise((resolve, reject) => {
+    new THREE.GLTFLoader().parse(
+      buf,
+      '',
+      (gltf) => {
+        const root = gltf.scene || (gltf.scenes && gltf.scenes[0]);
+        if (!root) { reject(new Error('GLB içinde sahne bulunamadı')); return; }
+        let meshCount = 0;
+        root.traverse(c => { if (c.isMesh) meshCount++; });
+        if (meshCount === 0) { reject(new Error('GLB içinde mesh bulunamadı')); return; }
+        resolve(root);
+      },
+      (err) => reject(err instanceof Error ? err : new Error('GLB parse hatası: ' + (err?.message || String(err))))
+    );
+  });
 }
 
-function fitModel(mesh) {
+function fitModel(mesh, fmt) {
   const THREE = window.THREE;
   const box = new THREE.Box3().setFromObject(mesh);
   const center = box.getCenter(new THREE.Vector3());
   const size = box.getSize(new THREE.Vector3());
   const maxDim = Math.max(size.x, size.y, size.z);
   mesh.position.sub(center);
-  const euler = new THREE.Euler(-Math.PI / 2, 0, 0);
-  mesh.rotation.copy(euler);
+  // STL/OBJ/PLY exports here are Z-up (CAD convention) and need rotating into
+  // three.js's Y-up view. GLB/glTF is Y-up per spec already, so no extra tilt.
+  const ext = (fmt || '').toLowerCase();
+  const needsUpAxisFix = ext === 'stl' || ext === 'obj' || ext === 'ply';
+  mesh.rotation.copy(needsUpAxisFix ? new THREE.Euler(-Math.PI / 2, 0, 0) : new THREE.Euler(0, 0, 0));
   const box2 = new THREE.Box3().setFromObject(mesh);
   const center2 = box2.getCenter(new THREE.Vector3());
   mesh.position.y = 0;
