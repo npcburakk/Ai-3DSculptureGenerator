@@ -4,6 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Text to 3D Generator</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+  <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="/static/images/favicon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta property="og:title" content="Text to 3D Generator">
+  <meta property="og:description" content="AI ile metinden 3D model üret.">
+  <meta property="og:image" content="/static/images/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -27,15 +36,17 @@
     }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
     nav { background: var(--bg); border-bottom: 0.5px solid var(--border); padding: 0 2rem; height: 52px; display: flex; align-items: center; justify-content: space-between; }
-    .nav-logo { font-size: 16px; font-weight: 500; }
+    .nav-logo { font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+    .nav-logo-icon { width: 24px; height: 24px; border-radius: 6px; object-fit: cover; }
     .nav-right { display: flex; align-items: center; gap: 12px; }
     .nav-user { font-size: 13px; color: var(--text2); }
     .nav-btn { font-size: 13px; padding: 6px 14px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: transparent; color: var(--text); cursor: pointer; font-family: inherit; }
     .nav-btn:hover { background: var(--bg2); }
     #authPage { min-height: 100vh; align-items: center; justify-content: center; padding: 2rem; }
     .auth-box { width: 100%; max-width: 400px; }
-    .auth-box h1 { font-size: 22px; font-weight: 500; margin-bottom: .25rem; }
-    .auth-box .auth-sub { font-size: 14px; color: var(--text2); margin-bottom: 2rem; }
+    .auth-hero { display: block; width: 96px; height: 96px; object-fit: cover; border-radius: var(--radius-lg); margin: 0 auto 1rem; }
+    .auth-box h1 { font-size: 22px; font-weight: 500; margin-bottom: .25rem; text-align: center; }
+    .auth-box .auth-sub { font-size: 14px; color: var(--text2); margin-bottom: 2rem; text-align: center; }
     .auth-tabs { display: flex; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--border); }
     .auth-tab { padding: 8px 16px; font-size: 14px; cursor: pointer; color: var(--text2); border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
     .auth-tab.active { color: var(--text); border-bottom-color: var(--text); }
@@ -62,6 +73,7 @@
     .dropzone { border: 1.5px dashed var(--border2); border-radius: var(--radius); padding: 24px; text-align: center; cursor: pointer; background: var(--bg2); transition: all .15s; }
     .dropzone:hover, .dropzone.drag { border-color: var(--info-border); background: var(--info-bg); }
     .dropzone-text { font-size: 13px; color: var(--text2); }
+    .dropzone-icon { display: block; width: 32px; height: 32px; object-fit: contain; margin: 0 auto 8px; opacity: .7; }
     .dropzone-browse { color: var(--info-text); text-decoration: underline; }
     .photo-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: .75rem; }
     .photo-thumb { position: relative; width: 72px; height: 72px; border-radius: var(--radius); overflow: hidden; border: 0.5px solid var(--border2); }
@@ -93,6 +105,7 @@
     .gen-btn:disabled { opacity: .4; cursor: not-allowed; }
     .gen-btn:hover:not(:disabled) { opacity: .85; }
     .progress-wrap { display: none; }
+    .progress-loader { display: block; width: 72px; height: 72px; object-fit: contain; margin: 0 auto 12px; border-radius: var(--radius); }
     .stage-label { font-size: 13px; color: var(--text2); margin-bottom: 8px; display: flex; justify-content: space-between; }
     .bar-bg { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
     .bar-fill { height: 100%; background: var(--text); border-radius: 2px; transition: width .4s ease; width: 0%; }
@@ -114,9 +127,11 @@
     .history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
     .history-header h2 { font-size: 16px; font-weight: 500; }
     .history-empty { font-size: 13px; color: var(--text3); text-align: center; padding: 2rem 0; }
+    .history-empty-icon { display: block; width: 48px; height: 48px; object-fit: contain; margin: 0 auto 8px; opacity: .5; }
     .history-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
     .history-item:last-child { border-bottom: none; }
-    .history-icon { width: 36px; height: 36px; border-radius: var(--radius); background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .history-icon { width: 36px; height: 36px; border-radius: var(--radius); background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; overflow: hidden; }
+    .history-icon img { width: 100%; height: 100%; object-fit: cover; }
     .history-info { flex: 1; min-width: 0; }
     .history-prompt { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .history-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
@@ -138,7 +153,8 @@
     /* 3D Viewer */
     #viewerOverlay { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.88); flex-direction: column; align-items: center; justify-content: center; }
     #viewerContainer { width: 90vw; height: 78vh; max-width: 1000px; border-radius: 12px; overflow: hidden; position: relative; background: #111; }
-    #viewerLoading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; background: #111; border-radius: 12px; z-index: 2; }
+    #viewerLoading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #fff; font-size: 14px; background: #111; border-radius: 12px; z-index: 2; }
+    #viewerLoading video, #viewerLoading img { display: block; width: 56px; height: 56px; object-fit: contain; }
     #viewerToolbar { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 3; }
     .viewer-btn { padding: 6px 14px; border: 0.5px solid rgba(255,255,255,0.3); border-radius: 6px; background: rgba(255,255,255,0.08); color: #fff; font-size: 13px; cursor: pointer; font-family: inherit; }
     .viewer-btn:hover { background: rgba(255,255,255,0.18); }
@@ -148,7 +164,7 @@
 <body>
 
 <nav id="mainNav" style="display:none">
-  <div class="nav-logo">Text to 3D</div>
+  <div class="nav-logo"><img src="/static/images/logo-mark.png" alt="" class="nav-logo-icon" onerror="this.remove()">Text to 3D</div>
   <div class="nav-right">
     <span class="nav-user" id="navUsername"></span>
     <button class="nav-btn" id="logoutBtn">Çıkış</button>
@@ -157,6 +173,7 @@
 
 <div id="authPage" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:2rem;">
   <div class="auth-box">
+    <img src="/static/images/auth-hero.png" alt="" class="auth-hero" onerror="this.remove()">
     <h1>Text to 3D</h1>
     <p class="auth-sub">AI ile metinden 3D model üret.</p>
     <div class="auth-tabs">
@@ -191,6 +208,7 @@
 
       <div id="photoUploadPanel" style="display:none">
         <div class="dropzone" id="dropzone">
+          <img src="/static/images/icon-upload.png" alt="" class="dropzone-icon" onerror="this.remove()">
           <div class="dropzone-text">Fotoğrafları buraya sürükleyin veya <span class="dropzone-browse">gözat</span> (1-4 foto)</div>
           <input type="file" id="photoInput" accept="image/jpeg,image/png" multiple hidden>
         </div>
@@ -312,6 +330,7 @@
 
     <div class="progress-wrap" id="progressWrap">
       <div class="card">
+        <video class="progress-loader" autoplay loop muted playsinline></video>
         <div class="stage-label"><span id="stageText">Başlatılıyor...</span><span id="pctText">0%</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barFill"></div></div>
         <div class="stages">
@@ -344,7 +363,7 @@
         <button class="nav-btn" id="refreshHistory" style="font-size:12px;padding:4px 10px">Yenile</button>
       </div>
       <div id="historyPanel" class="section-panel">
-        <div id="historyList"><div class="history-empty">Henüz üretim yok.</div></div>
+        <div id="historyList"><div class="history-empty"><img src="/static/images/empty-history.png" alt="" class="history-empty-icon" onerror="this.remove()">Henüz üretim yok.</div></div>
       </div>
     </div>
   </div>
@@ -352,7 +371,11 @@
 
 <div id="viewerOverlay">
   <div id="viewerContainer">
-    <div id="viewerLoading">Model yükleniyor...</div>
+    <div id="viewerLoading">
+      <video id="viewerLoadingMedia" autoplay loop muted playsinline></video>
+      <img id="viewerErrorIcon" src="/static/images/icon-model-error.png" alt="" style="display:none" onerror="this.remove()">
+      <div id="viewerLoadingText">Model yükleniyor...</div>
+    </div>
     <div id="viewerToolbar">
       <button class="viewer-btn" id="zoomInBtn">＋</button>
       <button class="viewer-btn" id="zoomOutBtn">－</button>
@@ -673,10 +696,10 @@ async function loadHistory() {
 function renderHistory(jobs) {
   const list = document.getElementById('historyList');
   document.getElementById('historyCount').textContent = jobs.length ? `(${jobs.length})` : '';
-  if (!jobs.length) { list.innerHTML = '<div class="history-empty">Henüz üretim yok.</div>'; return; }
+  if (!jobs.length) { list.innerHTML = '<div class="history-empty"><img src="/static/images/empty-history.png" alt="" class="history-empty-icon" onerror="this.remove()">Henüz üretim yok.</div>'; return; }
   list.innerHTML = jobs.map(job => `
     <div class="history-item">
-      <div class="history-icon">${job.metadata?.job_type === 'image_bust' ? '📷' : '✨'}</div>
+      <div class="history-icon"><img src="${job.metadata?.job_type === 'image_bust' ? '/static/images/icon-job-photo.png' : '/static/images/icon-job-text.png'}" alt="" onerror="this.replaceWith(document.createTextNode('${job.metadata?.job_type === 'image_bust' ? '📷' : '✨'}'))"></div>
       <div class="history-info">
         <div class="history-prompt">${job.prompt}</div>
         <div class="history-meta">${job.style || 'realistic'} · ${job.output_format?.toUpperCase()} · ${formatDate(job.created_at)}</div>
@@ -733,7 +756,7 @@ async function deleteJobItem(jobId, itemEl) {
     const remaining = document.querySelectorAll('#historyList .history-item').length;
     document.getElementById('historyCount').textContent = remaining ? `(${remaining})` : '';
     if (!remaining) {
-      document.getElementById('historyList').innerHTML = '<div class="history-empty">Henüz üretim yok.</div>';
+      document.getElementById('historyList').innerHTML = '<div class="history-empty"><img src="/static/images/empty-history.png" alt="" class="history-empty-icon" onerror="this.remove()">Henüz üretim yok.</div>';
     }
   } catch(e) { showError('Silme işlemi başarısız oldu.'); }
 }
@@ -764,7 +787,29 @@ document.getElementById('historyToggle').addEventListener('click', () => {
 function showError(msg) { const b = document.getElementById('errorBox'); b.textContent = msg; b.classList.add('show'); }
 function hideError() { document.getElementById('errorBox').classList.remove('show'); }
 function hideResult() { document.getElementById('resultCard').classList.remove('show'); currentJobId = null; }
-function showProgress() { document.getElementById('progressWrap').style.display = 'block'; updateProgress(0,'initializing'); }
+function ensureVideoBlobSrc(el, url) {
+  // python -m http.server (used to serve this static frontend) doesn't
+  // support HTTP Range requests, which native <video> relies on to load —
+  // fetching the whole file once and using a blob: URL sidesteps that.
+  if (!el || el.dataset.wired) return;
+  el.dataset.wired = '1';
+  const stuckTimer = setTimeout(() => { if (el.readyState === 0) { console.error('[assets] video decode zaman aşımı:', url); el.remove(); } }, 6000);
+  el.addEventListener('loadeddata', () => clearTimeout(stuckTimer), { once: true });
+  el.addEventListener('error', () => { clearTimeout(stuckTimer); console.error('[assets] video decode hatası:', url, el.error); el.remove(); });
+  fetch(url)
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.blob(); })
+    .then(blob => {
+      el.src = URL.createObjectURL(blob);
+      if (el.style.display !== 'none') el.play?.().catch(() => {});
+    })
+    .catch(e => { console.error('[assets] video yüklenemedi:', url, e); clearTimeout(stuckTimer); el.remove(); });
+}
+
+function showProgress() {
+  document.getElementById('progressWrap').style.display = 'block';
+  ensureVideoBlobSrc(document.querySelector('.progress-loader'), '/static/images/generating-loader.mp4');
+  updateProgress(0,'initializing');
+}
 function hideProgress() { document.getElementById('progressWrap').style.display = 'none'; }
 function setGenerating(v) { document.getElementById('genBtn').disabled = v; document.getElementById('genBtn').textContent = v ? 'Üretiliyor...' : '3D Model Üret'; }
 
@@ -862,8 +907,16 @@ function fetchModelData(url, fmt) {
 async function openViewer(url, fmt, name) {
   const overlay = document.getElementById('viewerOverlay');
   overlay.style.display = 'flex';
+  const loadingMedia = document.getElementById('viewerLoadingMedia');
+  const errorIcon = document.getElementById('viewerErrorIcon');
   document.getElementById('viewerLoading').style.display = 'flex';
-  document.getElementById('viewerLoading').textContent = 'Model yükleniyor...';
+  document.getElementById('viewerLoadingText').textContent = 'Model yükleniyor...';
+  if (loadingMedia) {
+    loadingMedia.style.display = '';
+    ensureVideoBlobSrc(loadingMedia, '/static/images/viewer-loading.mp4');
+    loadingMedia.play?.().catch(() => {});
+  }
+  if (errorIcon) errorIcon.style.display = 'none';
   document.getElementById('viewerTitle').textContent = name || fmt;
   if (!renderer) initViewer();
   if (currentMesh) { scene.remove(currentMesh); currentMesh = null; }
@@ -878,7 +931,9 @@ async function openViewer(url, fmt, name) {
   } catch(e) {
     console.error('[viewer] Model yüklenemedi:', e);
     modelCache.delete(url);
-    document.getElementById('viewerLoading').textContent = 'Model yüklenemedi: ' + (e && e.message ? e.message : 'bilinmeyen hata');
+    if (loadingMedia) loadingMedia.style.display = 'none';
+    if (errorIcon) errorIcon.style.display = '';
+    document.getElementById('viewerLoadingText').textContent = 'Model yüklenemedi: ' + (e && e.message ? e.message : 'bilinmeyen hata');
   }
 }
 
