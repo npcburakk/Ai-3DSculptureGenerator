@@ -1,181 +1,198 @@
-# 🧊 Text-to-3D Generator — Backend
+# 🧊 Text-to-3D Generator
 
-An AI-powered REST API that converts natural language text prompts into 3D model files (OBJ / PLY / GLB).
+Metin promptundan veya fotoğraftan (büst) 3D model (OBJ / PLY / GLB / STL)
+üreten, kullanıcı hesaplı bir uygulama. FastAPI backend, tek sayfalık bir
+frontend ve masaüstü paketleme (macOS `.app`, Windows `.exe`) içerir.
 
-Supports multiple generation backends:
-- **Shap-E** (OpenAI) — highest quality, requires GPU
-- **Point-E** (OpenAI) — faster, requires GPU
-- **Mock** — instant cube mesh, no ML needed (great for dev/testing)
+Üretim backend'i olarak **Meshy** (bulut API) kullanılır; prompt
+iyileştirme için opsiyonel olarak **OpenAI**. Yerel/GPU gerektiren
+**Shap-E** ve **Point-E** entegrasyonları da mevcut ama varsayılan
+kurulumda devre dışıdır (bkz. [Yerel/GPU Backend'leri](#-yerelgpu-backendleri-opsiyonel)).
 
 ---
 
-## 📁 Project Structure
+## 📁 Proje Yapısı
 
 ```
-backend/
+.
 ├── app/
-│   ├── main.py               # FastAPI app & lifespan
+│   ├── main.py                # FastAPI app; API + frontend/ statik mount
 │   ├── api/
-│   │   └── routes.py         # All API endpoints
+│   │   └── routes.py          # Tüm API endpoint'leri
+│   ├── auth/                  # JWT (python-jose) + bcrypt tabanlı auth
+│   │   ├── auth_bearer.py
+│   │   ├── auth_handler.py
+│   │   └── user_service.py
 │   ├── core/
-│   │   ├── config.py         # Settings (pydantic-settings + .env)
-│   │   └── constants.py      # Job statuses, backends, pipeline stages
-│   ├── schemas/
-│   │   └── job_schema.py     # Pydantic request/response models
+│   │   ├── config.py          # Settings (pydantic-settings + .env)
+│   │   ├── paths.py           # Dev / PyInstaller (frozen) yol çözümleme
+│   │   └── user_config.py     # ~/.text3d/config.json (kullanıcı API key'leri)
+│   ├── database/              # SQLAlchemy models + session (SQLite)
+│   ├── schemas/                # Pydantic request/response modelleri
 │   ├── services/
-│   │   ├── job_service.py    # Job CRUD + background task runner
-│   │   ├── pipeline_service.py  # Shap-E / Point-E / Mock pipelines
-│   │   ├── file_service.py   # Output file management
-│   │   └── status_service.py # Lightweight status polling
-│   ├── models/
-│   │   └── job_model.py      # Internal job dataclass
-│   ├── utils/
-│   │   ├── helpers.py        # Slugify, format_duration, etc.
-│   │   └── validators.py     # Input validation helpers
-│   └── storage/
-│       └── memory_store.py   # Thread-safe in-memory job store
-├── outputs/                  # Generated 3D files land here
-├── requirements.txt
-├── .env                      # Environment configuration
-└── README.md
+│   │   ├── job_service.py     # Job CRUD + arka plan görev çalıştırıcı
+│   │   ├── pipeline_service.py# Meshy / Shap-E / Point-E pipeline'ları
+│   │   ├── mesh_service.py    # Mesh son işleme (temizleme, decimate, ölçekleme)
+│   │   └── status_service.py  # Job durum takibi
+│   ├── storage/                # In-memory yardımcı store
+│   └── utils/
+├── frontend/                   # index.html + static/ (favicon, görseller, videolar)
+├── outputs/                    # Üretilen 3D dosyaları (dev modda)
+├── uploads/                    # Yüklenen fotoğraflar (dev modda)
+├── launcher.py                 # Masaüstü giriş noktası (uvicorn + pywebview)
+├── text3d.spec                 # PyInstaller spec — macOS .app
+├── text3d_windows.spec         # PyInstaller spec — Windows .exe
+├── requirements.txt            # Sunucu/geliştirme bağımlılıkları
+├── requirements-desktop.txt    # + masaüstü paketleme için gereken tüm bağımlılıklar
+├── .github/workflows/
+│   └── build-windows.yml       # windows-latest runner'da otomatik .exe build
+├── start.sh / stop.sh           # Backend'i (tek FastAPI süreci) başlat/durdur
+└── text3d.db                    # SQLite veritabanı (dev modda proje kökünde)
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Hızlı Başlangıç (geliştirme / web modu)
 
-### 1. Clone & create virtual environment
+### 1. Sanal ortam oluştur
 
 ```bash
-git clone <your-repo>
-cd backend
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-```
-
-### 2. Install dependencies
-
-```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configure `.env`
+### 2. `.env` yapılandır
 
-```bash
-cp .env .env.local   # edit as needed
-```
-
-Key settings:
-
-| Variable | Default | Description |
+| Değişken | Varsayılan | Açıklama |
 |---|---|---|
-| `DEFAULT_BACKEND` | `mock` | `mock` \| `shap_e` \| `point_e` |
-| `OPENAI_API_KEY` | — | Required for `openai` backend |
-| `OUTPUT_DIR` | `outputs` | Where 3D files are saved |
-| `SHAP_E_NUM_STEPS` | `64` | Diffusion steps (quality ↔ speed) |
+| `DEFAULT_BACKEND` | `meshy` | `meshy` \| `shap_e` \| `point_e` |
+| `MESHY_API_KEY` | — | Meshy backend'i için gerekli |
+| `OPENAI_API_KEY` | — | Prompt iyileştirme için opsiyonel |
+| `SECRET_KEY` | — | JWT imzalama anahtarı — production'da mutlaka değiştirin |
+| `OUTPUT_DIR` / `UPLOAD_DIR` | `outputs` / `uploads` | Üretilen dosyaların/yüklemelerin konumu |
 
-### 4. Run the server
+Kullanıcılar ayrıca kendi Meshy/OpenAI key'lerini uygulama içindeki
+**Ayarlar** ekranından da girebilir (`~/.text3d/config.json`'a yazılır ve
+`.env`'deki değerlerin üzerine geçer).
+
+### 3. Sunucuyu çalıştır
 
 ```bash
+./start.sh
+# veya
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Visit **http://localhost:8000/docs** for the interactive Swagger UI.
+**http://localhost:8000** hem frontend'i hem `/docs` altında Swagger
+UI'ı sunar (API ve arayüz aynı FastAPI sürecinden, aynı porttan servis
+edilir — ayrı bir frontend sunucusu yoktur).
 
 ---
 
-## 🔌 API Reference
+## 🖥️ Masaüstü Uygulaması (macOS / Windows)
 
-### Submit a Job
+`launcher.py`, uvicorn'u arka plan thread'inde başlatıp bir `pywebview`
+penceresi açar (kullanılamazsa varsayılan tarayıcıya düşer). Paketlenmiş
+haldeyken (`app/core/paths.py` → `is_frozen()`) veritabanı/outputs/uploads
+proje klasörüne değil, kullanıcının OS'e özgü veri dizinine yazılır:
 
-```http
-POST /api/v1/jobs
-Content-Type: application/json
+- macOS: `~/Library/Application Support/Text3D`
+- Windows: `%LOCALAPPDATA%\Text3D`
+- Linux: `~/.local/share/Text3D`
 
-{
-  "prompt": "a wooden chair with four legs",
-  "backend": "mock",
-  "output_format": "obj",
-  "num_steps": 64,
-  "guidance_scale": 15.0
-}
+Böylece `.app`/`.exe` güncellenirken veya silinirken kullanıcı verisi
+kaybolmaz.
+
+### macOS `.app` build etme
+
+```bash
+pip install -r requirements-desktop.txt
+pyinstaller text3d.spec
+open "dist/Text to 3D.app"
 ```
 
-**Response `202 Accepted`:**
-```json
-{
-  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  "status": "pending",
-  "progress": 0,
-  ...
-}
+### Windows `.exe` build etme
+
+PyInstaller cross-compile yapamadığı için Windows `.exe`'si yalnızca bir
+Windows makinede native olarak derlenebilir. Bunun için
+`.github/workflows/build-windows.yml`, `main`'e push edildiğinde (veya
+`v*` tag'i / manuel tetikleme ile) `windows-latest` runner'ında otomatik
+build alır ve sonucu workflow artifact'ı olarak, `v*` tag'lerinde ise
+GitHub Release'e ekli olarak sunar. Yerel bir Windows makinede manuel
+build için:
+
+```powershell
+pip install -r requirements-desktop.txt
+pyinstaller text3d_windows.spec
 ```
 
-### Poll Job Status
+Çıktı: `dist/Text to 3D/Text to 3D.exe` (+ yanındaki `_internal/`).
 
-```http
-GET /api/v1/jobs/{job_id}/status
-```
+Her iki spec dosyası da ağır ML paketlerini (`torch`, `shap_e`,
+`transformers` vb.) bilinçli olarak dışarıda bırakır — üretim akışı
+sadece bulut API'lerini (Meshy/OpenAI) kullanır.
 
-```json
-{
-  "id": "...",
-  "status": "running",
-  "progress": 60,
-  "current_stage": "generating_latents"
-}
-```
+---
 
-### Download Output
+## 🔌 API Referansı
 
-```http
-GET /api/v1/jobs/{job_id}/download
-```
+Tüm endpoint'ler `/api/v1` altında (aksi belirtilmedikçe `Authorization:
+Bearer <token>` gerektirir).
 
-Returns the 3D file as an `application/octet-stream` download.
+### Auth
 
-### Other Endpoints
-
-| Method | Path | Description |
+| Method | Path | Açıklama |
 |---|---|---|
-| `GET` | `/api/v1/jobs` | List all jobs (paginated) |
-| `GET` | `/api/v1/jobs/{id}` | Get job details |
-| `DELETE` | `/api/v1/jobs/{id}` | Cancel / delete job |
-| `GET` | `/api/v1/models` | List available backends |
-| `GET` | `/api/v1/stats` | Aggregate statistics |
-| `GET` | `/health` | Health check |
+| `POST` | `/auth/register` | Yeni kullanıcı kaydı |
+| `POST` | `/auth/login` | Giriş, JWT token döner |
+| `GET` | `/auth/me` | Giriş yapmış kullanıcının profili |
+
+### Jobs (üretim)
+
+| Method | Path | Açıklama |
+|---|---|---|
+| `POST` | `/jobs` | Metinden 3D model üretimi başlat |
+| `POST` | `/jobs/image` | Fotoğraftan büst üretimi başlat (multipart upload) |
+| `GET` | `/jobs` | Job'ları listele (sayfalı) |
+| `GET` | `/jobs/{id}` | Job detayı |
+| `GET` | `/jobs/{id}/status` | Hafif durum/ilerleme sorgusu |
+| `POST` | `/jobs/{id}/retry` | Başarısız job'ı yeniden dene |
+| `PATCH` | `/jobs/{id}/favorite` | Favori işaretle/kaldır |
+| `DELETE` | `/jobs/{id}` | Job'ı sil |
+| `GET` | `/jobs/{id}/download` | Çıktı dosyasını indir |
+| `GET` | `/jobs/{id}/download-all` | Tüm çıktı dosyalarını ZIP olarak indir |
+
+### Diğer
+
+| Method | Path | Açıklama |
+|---|---|---|
+| `POST` | `/prompt/enhance` | OpenAI ile prompt iyileştirme |
+| `GET` | `/models` | Kullanılabilir backend'leri listele |
+| `GET` | `/stats` | Toplam/istatistik özet |
+| `GET` | `/settings/keys` | Kullanıcının kayıtlı API key'lerinin durumu |
+| `POST` | `/settings/keys` | Meshy/OpenAI API key'lerini kaydet |
+| `GET` | `/health` | Health check (auth gerektirmez, `/api/v1` dışında) |
 
 ---
 
-## 🧠 Enabling Real AI Backends
+## 🧠 Yerel/GPU Backend'leri (opsiyonel)
 
-### Shap-E (recommended)
-
-```bash
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-pip install git+https://github.com/openai/shap-e.git
-```
-
-Set in `.env`:
-```
-DEFAULT_BACKEND=shap_e
-```
-
-### Point-E
+Varsayılan `meshy` backend'i bulut API kullanır, GPU gerektirmez. Yerel
+üretim için Shap-E/Point-E de desteklenir ama `requirements.txt`'te
+yorum satırı olarak bırakılmıştır (paketlenmiş masaüstü uygulamasını
+gigabaytlarca büyütüp kırılganlaştırdıkları için):
 
 ```bash
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-pip install git+https://github.com/openai/point-e.git
+pip install git+https://github.com/openai/shap-e.git   # veya point-e
 ```
 
-Set in `.env`:
-```
-DEFAULT_BACKEND=point_e
-```
+`.env`'de: `DEFAULT_BACKEND=shap_e` (veya `point_e`).
 
 ---
 
-## 🧪 Running Tests
+## 🧪 Testler
 
 ```bash
 pytest -v
@@ -183,22 +200,11 @@ pytest -v
 
 ---
 
-## ⚙️ Pipeline Stages & Progress
+## 📝 Notlar
 
-| Stage | Progress |
-|---|---|
-| `initializing` | 5% |
-| `encoding_text` | 20% |
-| `generating_latents` | 60% |
-| `decoding_mesh` | 85% |
-| `exporting_file` | 95% |
-| `done` | 100% |
-
----
-
-## 📝 Notes
-
-- The **mock** backend requires no GPU and is ideal for local development.
-- The in-memory store resets on server restart. For persistence, swap `memory_store.py` with a Redis or SQLite adapter.
-- Generated files are served statically at `/outputs/<job_id>.<format>`.
-- Concurrent job limit is configurable via `MAX_CONCURRENT_JOBS` in `.env`.
+- Veritabanı SQLite (`text3d.db`); geliştirmede proje kökünde, paketlenmiş
+  haldeyken kullanıcının veri dizininde.
+- Üretilen dosyalar `/outputs/<job_id>.<format>` altında statik servis edilir.
+- Eşzamanlı job limiti `.env`'deki `MAX_CONCURRENT_JOBS` ile ayarlanır.
+- 3D viewer (Three.js) CDN üzerinden yüklenir — masaüstü uygulaması bu
+  yüzden tam offline çalışmaz, internet bağlantısı gerektirir.
