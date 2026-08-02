@@ -77,6 +77,11 @@ def main() -> None:
     try:
         import webview
 
+        # pywebview varsayılan olarak indirmeleri engeller (WKWebView/WebView2
+        # download delegate'i devre dışı) — "İndir"/"ZIP" linkleri sessizce
+        # hiçbir şey yapmaz. Pencereyi oluşturmadan önce açılması gerekiyor.
+        webview.settings["ALLOW_DOWNLOADS"] = True
+
         window = webview.create_window(
             WINDOW_TITLE, url, width=1320, height=880, min_size=(960, 640)
         )
