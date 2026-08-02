@@ -1,0 +1,61 @@
+name: Build Windows .exe
+
+# text3d_windows.spec native olarak yalnızca Windows üzerinde derlenebilir
+# (PyInstaller cross-compile yapamaz), bu yüzden windows-latest runner
+# kullanılıyor. push'ta artifact üretir; "v*" tag'i push edildiğinde ayrıca
+# GitHub Release'e .zip olarak ekler.
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths:
+      - "app/**"
+      - "frontend/**"
+      - "launcher.py"
+      - "text3d_windows.spec"
+      - "requirements*.txt"
+      - ".github/workflows/build-windows.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-desktop.txt
+
+      - name: Build with PyInstaller
+        run: pyinstaller text3d_windows.spec
+
+      - name: Zip build output
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist/Text to 3D/*" -DestinationPath "Text to 3D-windows.zip"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: text3d-windows
+          path: Text to 3D-windows.zip
+          retention-days: 30
+
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Text to 3D-windows.zip

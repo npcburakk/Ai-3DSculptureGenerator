@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
 from app.core.config import settings
+from app.core.paths import get_frontend_dir
 from app.database.db_store import store
 from app.utils.error_messages import GENERIC_ERROR, INVALID_INPUT_ERROR
 
@@ -57,16 +58,14 @@ async def unhandled_exception_handler(request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": GENERIC_ERROR})
 
 
-@app.get("/", tags=["Health"])
-async def root():
-    return {
-        "app": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "status": "running",
-        "docs": "/docs",
-    }
-
-
 @app.get("/health", tags=["Health"])
 async def health_check():
     return {"status": "healthy", "jobs_in_db": store.count()}
+
+
+# Frontend (index.html + static/) — tüm API route'larından ve
+# exception handler'lardan SONRA, en son mount edilir. Starlette route'ları
+# tanımlanma sırasına göre dener; bu mount en sonda olmazsa "/health" gibi
+# sonradan eklenen route'ları gölgeleyip 404 döndürür. Eşleşmeyen her şey
+# (ör. "/", "/static/images/...") için devreye girer.
+app.mount("/", StaticFiles(directory=str(get_frontend_dir()), html=True), name="frontend")

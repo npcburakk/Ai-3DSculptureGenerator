@@ -86,5 +86,26 @@ def _apply_user_config(s: Settings) -> None:
         s.OPENAI_API_KEY = user_cfg["openai_api_key"]
 
 
+def _apply_frozen_paths(s: Settings) -> None:
+    """
+    PyInstaller ile paketlenmiş (.app) halde çalışırken DB/outputs/uploads
+    gibi yazılabilir veriler paketin içine değil, kullanıcının kendi
+    Application Support dizinine yazılır — .app salt-okunur olabilir ve
+    güncelleme/silmede içeriği kaybolur; geliştirmede davranış değişmez.
+    """
+    from app.core.paths import is_frozen, get_user_data_dir
+
+    if not is_frozen():
+        return
+    data_dir = get_user_data_dir()
+    (data_dir / "outputs").mkdir(parents=True, exist_ok=True)
+    (data_dir / "uploads").mkdir(parents=True, exist_ok=True)
+    s.BASE_DIR = data_dir
+    s.OUTPUT_DIR = str(data_dir / "outputs")
+    s.UPLOAD_DIR = str(data_dir / "uploads")
+    s.DATABASE_URL = f"sqlite:///{data_dir / 'text3d.db'}"
+
+
 settings = get_settings()
 _apply_user_config(settings)
+_apply_frozen_paths(settings)

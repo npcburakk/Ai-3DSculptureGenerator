@@ -1,5 +1,5 @@
 #!/bin/bash
-# start.sh ile açılan backend + frontend'i durdurur.
+# start.sh ile açılan sunucuyu durdurur.
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR"
 
@@ -14,4 +14,4 @@ done
 lsof -ti:8000 | xargs kill -9 2>/dev/null || true
 lsof -ti:3000 | xargs kill -9 2>/dev/null || true
 
-echo "✅ Tüm servisler durduruldu."
+echo "✅ Sunucu durduruldu."

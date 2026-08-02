@@ -1,0 +1,35 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Masaüstü paketleme (PyInstaller) bağımlılıkları — Mac (.app) ve Windows (.exe)
+#
+# requirements.txt geliştirme/sunucu ortamı içindir; bu dosya text3d.spec /
+# text3d_windows.spec ile paketlenen masaüstü uygulamasının fiilen import
+# ettiği her şeyi (auth, mesh, pencere, AI SDK dahil) kapsar. Ağır ML yığını
+# (torch, shap-e, transformers) bilinçli olarak burada da yok — bkz.
+# text3d.spec / text3d_windows.spec üst notu.
+# ─────────────────────────────────────────────────────────────────────────────
+
+-r requirements.txt
+
+# ── Auth ──────────────────────────────────────────────────────────────────
+python-jose[cryptography]
+bcrypt
+email-validator
+
+# ── Veritabanı ────────────────────────────────────────────────────────────
+sqlalchemy
+
+# ── 3D mesh işleme ────────────────────────────────────────────────────────
+trimesh
+
+# ── Masaüstü penceresi ────────────────────────────────────────────────────
+pywebview
+# Windows'ta pywebview'ın varsayılan arka ucu (Edge WebView2) .NET
+# interop'u pythonnet/clr_loader üzerinden kullanır.
+pythonnet; sys_platform == "win32"
+clr_loader; sys_platform == "win32"
+
+# ── Meshy/OpenAI API istemcisi ────────────────────────────────────────────
+openai
+
+# ── Paketleyici ───────────────────────────────────────────────────────────
+pyinstaller
