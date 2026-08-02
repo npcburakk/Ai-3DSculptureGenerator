@@ -106,7 +106,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon="frontend/favicon.ico",
+    icon="build_assets/AppIcon.ico",
 )
 
 coll = COLLECT(

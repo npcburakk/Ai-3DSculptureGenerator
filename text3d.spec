@@ -119,7 +119,7 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name=f"{APP_NAME}.app",
-    icon=None,
+    icon="build_assets/AppIcon.icns",
     bundle_identifier="com.text3d.desktop",
     info_plist={
         "CFBundleName": APP_NAME,
