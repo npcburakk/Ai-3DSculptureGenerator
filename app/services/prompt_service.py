@@ -56,9 +56,6 @@ Rules:
 
 
 class PromptService:
-    def __init__(self):
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
-
     async def enhance(self, prompt: str, style: str = "realistic") -> dict:
         """
         Prompt'u OpenAI ile geliştirir.
@@ -67,14 +64,19 @@ class PromptService:
         if not settings.OPENAI_API_KEY:
             return {"original": prompt, "enhanced": prompt, "style": style}
 
+        # Key'i her çağrıda taze okur (self.client'ta önbelleklemez) — aksi
+        # halde Ayarlar ekranından key sonradan girildiğinde, uygulama
+        # başında boş key ile oluşturulmuş bir client kalıcı olarak
+        # kullanılmaya devam ederdi.
+        client = OpenAI(api_key=settings.OPENAI_API_KEY)
         style_desc = STYLE_DESCRIPTIONS.get(style, "")
-        
+
         user_message = f"""Enhance this 3D model prompt: "{prompt}"
 Style: {style} - {style_desc}
 Output only the enhanced prompt."""
 
         try:
-            response = self.client.chat.completions.create(
+            response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},

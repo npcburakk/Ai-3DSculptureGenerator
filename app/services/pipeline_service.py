@@ -15,6 +15,7 @@ from app.core.config import settings
 from app.core.constants import PipelineStage
 from app.models.job_model import JobModel
 from app.services.mesh_service import MeshService
+from app.utils.error_messages import MISSING_MESHY_KEY_ERROR, MissingApiKeyError
 
 logger = logging.getLogger(__name__)
 ProgressCallback = Callable[[int, str], None]
@@ -124,7 +125,7 @@ class PipelineService:
     async def _run_meshy(self, job: JobModel, cb: ProgressCallback) -> str:
         api_key = settings.MESHY_API_KEY
         if not api_key:
-            raise RuntimeError("MESHY_API_KEY is not set in .env")
+            raise MissingApiKeyError(MISSING_MESHY_KEY_ERROR)
 
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         cb(5, PipelineStage.INITIALIZING)
@@ -159,7 +160,7 @@ class PipelineService:
     async def _run_meshy_image(self, job: JobModel, cb: ProgressCallback) -> str:
         api_key = settings.MESHY_API_KEY
         if not api_key:
-            raise RuntimeError("MESHY_API_KEY is not set in .env")
+            raise MissingApiKeyError(MISSING_MESHY_KEY_ERROR)
 
         image_paths = job.metadata.get("image_paths", [])
         if not image_paths:

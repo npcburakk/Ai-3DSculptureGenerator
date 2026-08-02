@@ -14,6 +14,7 @@ from app.schemas.job_schema import (
     JobStatusResponse, PromptEnhanceRequest, PromptEnhanceResponse,
 )
 from app.schemas.user_schema import UserRegisterRequest, UserLoginRequest, UserResponse, TokenResponse
+from app.schemas.settings_schema import ApiKeysUpdateRequest, ApiKeysStatusResponse
 from app.services.job_service import JobService
 from app.services.status_service import StatusService
 from app.services.prompt_service import PromptService
@@ -22,7 +23,9 @@ from app.auth.user_service import UserService as UserSvc
 from app.auth.auth_bearer import get_current_user, require_current_user
 from app.core.constants import SupportedBackends, OutputFormat, ImageUpload, JobStatus
 from app.core.config import settings
+from app.core.user_config import save_user_api_keys
 from app.database.db_models import UserDB
+from app.utils.error_messages import MISSING_MESHY_KEY_ERROR
 
 router = APIRouter()
 job_service = JobService()
@@ -60,6 +63,8 @@ async def create_job(
     # (curl/Postman) when explicitly enabled through ENABLE_MOCK_BACKEND.
     if payload.backend == "mock" and not settings.ENABLE_MOCK_BACKEND:
         raise HTTPException(status_code=403, detail="Mock backend is disabled")
+    if payload.backend == "meshy" and not settings.MESHY_API_KEY:
+        raise HTTPException(status_code=400, detail=MISSING_MESHY_KEY_ERROR)
     if payload.enhance_prompt and payload.prompt:
         result = await prompt_service.enhance(payload.prompt, payload.style)
         enhanced = result["enhanced"]
@@ -77,6 +82,8 @@ async def create_image_job(
     output_format: str = Form("obj"),
     current_user: Optional[UserDB] = Depends(get_current_user),
 ):
+    if not settings.MESHY_API_KEY:
+        raise HTTPException(status_code=400, detail=MISSING_MESHY_KEY_ERROR)
     if not (ImageUpload.MIN_FILES <= len(files) <= ImageUpload.MAX_FILES):
         raise HTTPException(
             status_code=422,
@@ -136,6 +143,8 @@ async def retry_job(
         raise HTTPException(status_code=409, detail="Only failed jobs can be retried")
     if existing.backend == "mock" and not settings.ENABLE_MOCK_BACKEND:
         raise HTTPException(status_code=403, detail="Mock backend is disabled")
+    if existing.backend == "meshy" and not settings.MESHY_API_KEY:
+        raise HTTPException(status_code=400, detail=MISSING_MESHY_KEY_ERROR)
     user_id = current_user.id if current_user else None
     new_job = job_service.retry_job(job_id, user_id=user_id)
     background_tasks.add_task(job_service.run_pipeline, new_job.id)
@@ -206,3 +215,28 @@ async def list_models():
 async def get_stats(current_user: Optional[UserDB] = Depends(get_current_user)):
     user_id = current_user.id if current_user else None
     return job_service.get_stats(user_id=user_id)
+
+@router.get("/settings/keys", response_model=ApiKeysStatusResponse, tags=["Settings"])
+async def get_api_keys_status():
+    return ApiKeysStatusResponse(
+        meshy_api_key_set=bool(settings.MESHY_API_KEY),
+        openai_api_key_set=bool(settings.OPENAI_API_KEY),
+    )
+
+@router.post("/settings/keys", response_model=ApiKeysStatusResponse, tags=["Settings"])
+async def update_api_keys(payload: ApiKeysUpdateRequest):
+    # Key değerleri hiçbir koşulda loglanmaz/response'ta geri dönmez —
+    # sadece ~/.text3d/config.json'a yazılır ve çalışan process'in
+    # settings'ine anlık olarak uygulanır (yeniden başlatma gerekmez).
+    save_user_api_keys(
+        meshy_api_key=payload.meshy_api_key,
+        openai_api_key=payload.openai_api_key,
+    )
+    if payload.meshy_api_key is not None:
+        settings.MESHY_API_KEY = payload.meshy_api_key
+    if payload.openai_api_key is not None:
+        settings.OPENAI_API_KEY = payload.openai_api_key
+    return ApiKeysStatusResponse(
+        meshy_api_key_set=bool(settings.MESHY_API_KEY),
+        openai_api_key_set=bool(settings.OPENAI_API_KEY),
+    )

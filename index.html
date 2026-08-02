@@ -218,6 +218,31 @@
     .viewer-btn { padding: 6px 14px; border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; background: rgba(255,255,255,0.06); color: #fff; font-size: 13px; cursor: pointer; font-family: inherit; }
     .viewer-btn:hover { background: rgba(168,85,247,0.25); border-color: var(--accent-solid); }
     #viewerTitle { color: rgba(255,255,255,0.5); font-size: 12px; margin-top: 10px; max-width: 90vw; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Settings modal */
+    #settingsOverlay { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(5,5,9,0.75); align-items: center; justify-content: center; padding: 1.5rem; }
+    .settings-box { width: 100%; max-width: 440px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow-card); }
+    .settings-box h2 { font-size: 17px; font-weight: 600; margin-bottom: .25rem; }
+    .settings-sub { font-size: 13px; color: var(--text2); margin-bottom: 1.5rem; line-height: 1.5; }
+    .settings-field { margin-bottom: 1rem; }
+    .settings-field-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+    .settings-field-label label { font-size: 13px; color: var(--text2); margin: 0; }
+    .key-status { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+    .key-status.set { background: var(--success-bg); color: var(--success-text); }
+    .key-status.unset { background: rgba(255,255,255,0.06); color: var(--text3); }
+    .settings-field input { width: 100%; padding: 9px 12px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--bg-input); color: var(--text); font-size: 14px; font-family: inherit; }
+    .settings-field input:focus { outline: none; border-color: var(--accent-solid); }
+    .settings-hint { font-size: 11px; color: var(--text3); margin-top: 12px; line-height: 1.5; }
+    .settings-actions { display: flex; gap: 8px; margin-top: 1.25rem; }
+    .settings-save-btn { flex: 1; padding: 10px; border: none; border-radius: var(--radius); background: var(--accent-grad); color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+    .settings-save-btn:hover { opacity: .9; }
+    .settings-save-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .settings-close-btn { padding: 10px 16px; border: 1px solid var(--border2); border-radius: var(--radius); background: transparent; color: var(--text); font-size: 14px; cursor: pointer; font-family: inherit; }
+    .settings-close-btn:hover { background: var(--bg3); }
+    .settings-msg { font-size: 13px; padding: 8px 12px; border-radius: var(--radius); margin-bottom: 1rem; display: none; }
+    .settings-msg.show { display: block; }
+    .settings-msg.success { background: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-border); }
+    .settings-msg.error { background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
   </style>
 </head>
 <body>
@@ -507,6 +532,33 @@
   <div id="viewerTitle"></div>
 </div>
 
+<div id="settingsOverlay">
+  <div class="settings-box">
+    <h2>Ayarlar</h2>
+    <p class="settings-sub">API key'leriniz sadece bu bilgisayarda, kullanıcı dizininizde (~/.text3d/config.json) saklanır — sunucuya veya başka bir yere gönderilmez.</p>
+    <div class="settings-msg" id="settingsMsg"></div>
+    <div class="settings-field">
+      <div class="settings-field-label">
+        <label for="meshyKeyInput">Meshy API Key</label>
+        <span class="key-status unset" id="meshyKeyStatus">Ayarlanmadı</span>
+      </div>
+      <input type="password" id="meshyKeyInput" placeholder="msy_..." autocomplete="off">
+    </div>
+    <div class="settings-field">
+      <div class="settings-field-label">
+        <label for="openaiKeyInput">OpenAI API Key</label>
+        <span class="key-status unset" id="openaiKeyStatus">Ayarlanmadı</span>
+      </div>
+      <input type="password" id="openaiKeyInput" placeholder="sk-..." autocomplete="off">
+    </div>
+    <div class="settings-hint">Bir alanı boş bırakırsanız o key değiştirilmez. Meshy key, 3D model üretimi için zorunludur. OpenAI key opsiyoneldir (yalnızca prompt geliştirme için kullanılır).</div>
+    <div class="settings-actions">
+      <button class="settings-close-btn" id="settingsCloseBtn">Kapat</button>
+      <button class="settings-save-btn" id="settingsSaveBtn">Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
@@ -734,9 +786,9 @@ async function startGeneration() {
         }
       })
     });
-    if (!res.ok) throw new Error();
-    const job = await res.json();
-    pollStatus(job.id, prompt);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showError(data.detail || 'Sunucuya bağlanılamadı.'); setGenerating(false); hideProgress(); return; }
+    pollStatus(data.id, prompt);
   } catch(e) { showError('Sunucuya bağlanılamadı.'); setGenerating(false); hideProgress(); }
 }
 
@@ -752,9 +804,9 @@ async function startImageGeneration() {
   formData.append('output_format', selectedFmt);
   try {
     const res = await fetch(`${API}/jobs/image`, { method: 'POST', headers, body: formData });
-    if (!res.ok) throw new Error();
-    const job = await res.json();
-    pollStatus(job.id, 'foto-bust');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showError(data.detail || 'Sunucuya bağlanılamadı.'); setGenerating(false); hideProgress(); return; }
+    pollStatus(data.id, 'foto-bust');
   } catch(e) { showError('Sunucuya bağlanılamadı.'); setGenerating(false); hideProgress(); }
 }
 
@@ -859,9 +911,9 @@ async function retryJob(jobId) {
   hideError(); hideResult(); setGenerating(true); showProgress();
   try {
     const res = await fetch(`${API}/jobs/${jobId}/retry`, { method: 'POST', headers });
-    if (!res.ok) throw new Error();
-    const job = await res.json();
-    pollStatus(job.id, job.prompt);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showError(data.detail || 'Tekrar deneme başarısız oldu.'); setGenerating(false); hideProgress(); return; }
+    pollStatus(data.id, data.prompt);
   } catch(e) {
     showError('Tekrar deneme başarısız oldu.');
     setGenerating(false); hideProgress();
@@ -932,6 +984,81 @@ document.getElementById('navHistory').addEventListener('click', () => {
   document.getElementById('historyToggle').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 document.getElementById('sidebarNewBtn').addEventListener('click', focusGenerator);
+
+// Ayarlar (API key'leri)
+document.getElementById('navSettings').addEventListener('click', openSettings);
+
+async function openSettings() {
+  document.getElementById('settingsOverlay').style.display = 'flex';
+  document.getElementById('meshyKeyInput').value = '';
+  document.getElementById('openaiKeyInput').value = '';
+  hideSettingsMsg();
+  await refreshKeyStatus();
+}
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').style.display = 'none';
+}
+
+async function refreshKeyStatus() {
+  try {
+    const res = await fetch(`${API}/settings/keys`);
+    const data = await res.json();
+    setKeyStatus('meshyKeyStatus', data.meshy_api_key_set);
+    setKeyStatus('openaiKeyStatus', data.openai_api_key_set);
+  } catch (e) {}
+}
+
+function setKeyStatus(elId, isSet) {
+  const el = document.getElementById(elId);
+  el.textContent = isSet ? 'Ayarlı' : 'Ayarlanmadı';
+  el.classList.toggle('set', isSet);
+  el.classList.toggle('unset', !isSet);
+}
+
+function showSettingsMsg(msg, type) {
+  const el = document.getElementById('settingsMsg');
+  el.textContent = msg;
+  el.className = `settings-msg show ${type}`;
+}
+function hideSettingsMsg() {
+  document.getElementById('settingsMsg').classList.remove('show');
+}
+
+document.getElementById('settingsCloseBtn').addEventListener('click', closeSettings);
+document.getElementById('settingsOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'settingsOverlay') closeSettings();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('settingsOverlay').style.display === 'flex') closeSettings();
+});
+
+document.getElementById('settingsSaveBtn').addEventListener('click', async () => {
+  const meshyVal = document.getElementById('meshyKeyInput').value.trim();
+  const openaiVal = document.getElementById('openaiKeyInput').value.trim();
+  if (!meshyVal && !openaiVal) { showSettingsMsg('Kaydetmek için en az bir key girin.', 'error'); return; }
+  const body = {};
+  if (meshyVal) body.meshy_api_key = meshyVal;
+  if (openaiVal) body.openai_api_key = openaiVal;
+  const btn = document.getElementById('settingsSaveBtn');
+  btn.disabled = true; btn.textContent = 'Kaydediliyor...';
+  try {
+    const res = await fetch(`${API}/settings/keys`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showSettingsMsg(data.detail || 'Kaydedilemedi, tekrar deneyin.', 'error'); return; }
+    setKeyStatus('meshyKeyStatus', data.meshy_api_key_set);
+    setKeyStatus('openaiKeyStatus', data.openai_api_key_set);
+    document.getElementById('meshyKeyInput').value = '';
+    document.getElementById('openaiKeyInput').value = '';
+    showSettingsMsg('Kaydedildi.', 'success');
+  } catch (e) {
+    showSettingsMsg('Sunucuya bağlanılamadı.', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Kaydet';
+  }
+});
 
 function showError(msg) { const b = document.getElementById('errorBox'); b.textContent = msg; b.classList.add('show'); }
 function hideError() { document.getElementById('errorBox').classList.remove('show'); }

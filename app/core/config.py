@@ -70,4 +70,21 @@ def get_settings() -> Settings:
     return Settings()
 
 
+def _apply_user_config(s: Settings) -> None:
+    """
+    ~/.text3d/config.json içindeki key'ler (Ayarlar ekranından kaydedilir)
+    .env'deki değerlerin üzerine yazar — böylece kullanıcı Ayarlar'dan
+    girdiği key, .env'de bir şey olmasa bile geçerli olur. Config
+    dosyasında olmayan/boş alanlar .env değerini değiştirmez.
+    """
+    from app.core.user_config import load_user_config
+
+    user_cfg = load_user_config()
+    if user_cfg.get("meshy_api_key"):
+        s.MESHY_API_KEY = user_cfg["meshy_api_key"]
+    if user_cfg.get("openai_api_key"):
+        s.OPENAI_API_KEY = user_cfg["openai_api_key"]
+
+
 settings = get_settings()
+_apply_user_config(settings)
