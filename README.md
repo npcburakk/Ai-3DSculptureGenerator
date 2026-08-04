@@ -1,4 +1,4 @@
-# 🧊 Text-to-3D Generator
+🧊 Text-to-3D Generator
 
 Metin promptundan veya fotoğraftan (büst) 3D model (OBJ / PLY / GLB / STL)
 üreten, kullanıcı hesaplı bir uygulama. FastAPI backend, tek sayfalık bir
